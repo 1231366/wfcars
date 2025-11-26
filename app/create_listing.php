@@ -5,15 +5,12 @@
  */
 
 session_start(); 
-include 'db_connect.php';
+include 'db_connect.php'; // Inclui a ligação à DB
 
-// Redirecionar se o utilizador não estiver logado
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
 
-$upload_dir = 'uploads/car_photos/'; 
+
+// Configurações de Upload
+$upload_dir = 'uploads/car_photos/'; // Caminho de uploads. Deve estar na raiz, não dentro de /app/ para ser mais limpo.
 $max_files = 8;
 $allowed_types = ['image/jpeg', 'image/png'];
 $max_size = 5 * 1024 * 1024; // 5 MB por foto
@@ -21,7 +18,7 @@ $max_size = 5 * 1024 * 1024; // 5 MB por foto
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // --- 1. Recolha e Validação de Campos de Texto ---
-    $titulo = trim($conn->real_escape_string($_POST['modelo'])); 
+    $titulo = trim($conn->real_escape_string($_POST['modelo'])); // Campo 'modelo' é usado como 'titulo'
     $marca = trim($conn->real_escape_string($_POST['marca']));
     $descricao = trim($conn->real_escape_string($_POST['descricao']));
     $transmissao = trim($conn->real_escape_string($_POST['transmissao']));
@@ -72,6 +69,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                  header("Location: admin-new-listing.php?status=error&message={$error}");
                  exit();
             }
+            
+            // Criar o diretório se não existir (O diretório 'uploads' deve estar na raiz do projeto)
+            if (!is_dir($upload_dir)) {
+                // Tentativa de criar o diretório
+                if (!mkdir($upload_dir, 0755, true)) {
+                    $error = urlencode("Erro fatal: O diretório de upload '{$upload_dir}' não existe e não pôde ser criado. Verifique permissões.");
+                    $conn->rollback();
+                    header("Location: admin-new-listing.php?status=error&message={$error}");
+                    exit();
+                }
+            }
 
             for ($i = 0; $i < $file_count; $i++) {
                 // Se não houve ficheiro ou houve erro, ignora a iteração
@@ -95,7 +103,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $file_path = $upload_dir . $file_name;
 
                 // Move o ficheiro
-                if (move_uploaded_file($file_tmp, $file_path)) {
+                if (move_uploaded_file($file_tmp, __DIR__ . '/../' . $file_path)) {
+                    // O caminho guardado na DB é o caminho relativo para ser acessível pelo frontend
                     $uploaded_paths[] = $file_path;
                 } else {
                     $all_uploads_success = false;
@@ -109,7 +118,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $insert_photos_sql = "INSERT INTO fotos_anuncio (anuncio_id, caminho_foto) VALUES ";
             $values = [];
             foreach ($uploaded_paths as $path) {
-                // Nota: Usamos a barra invertida \ para escapar a barra normal / no caminho para MySQL
                 $values[] = "({$anuncio_id}, '{$conn->real_escape_string($path)}')"; 
             }
             $insert_photos_sql .= implode(', ', $values);
@@ -123,16 +131,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($all_uploads_success) {
             $conn->commit();
             $message = urlencode("Anúncio '{$titulo}' publicado com sucesso! Fotos carregadas: " . count($uploaded_paths));
-            header("Location: admin-active-listings.php?status=success&message={$message}");
+            // Redireciona para a lista de anúncios ativos
+            header("Location: admin-active-listings.php?status=success&message={$message}"); 
         } else {
             $conn->rollback();
             // Limpa os ficheiros que foram movidos antes de falhar
             foreach ($uploaded_paths as $path) {
-                if (file_exists($path)) {
-                    unlink($path);
+                if (file_exists(__DIR__ . '/../' . $path)) {
+                    unlink(__DIR__ . '/../' . $path);
                 }
             }
-            $error = urlencode("Erro (Fotos): Ocorreu um erro no upload, validação de tipo/tamanho, ou registo de fotos.");
+            $error = urlencode("Erro (Fotos): Ocorreu um erro no upload, validação, ou registo de fotos. (Verifique as permissões da pasta 'uploads/car_photos/')");
             header("Location: admin-new-listing.php?status=error&message={$error}");
         }
 

@@ -1,3 +1,37 @@
+<?php
+session_start();
+include 'db_connect.php'; 
+
+// Redireciona para o login se o utilizador não estiver autenticado
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+// --- Funções de Leitura de Dados (Retido) ---
+$ativos_count = 0;
+$result = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Ativo'");
+if ($result) {
+    $ativos_count = $result->fetch_assoc()['count'];
+}
+
+$vendidos_total_count = 0;
+$result = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Vendido'");
+if ($result) {
+    $vendidos_total_count = $result->fetch_assoc()['count'];
+}
+
+$faturacao_total = 0;
+$result = $conn->query("SELECT SUM(preco) as total FROM anuncios WHERE status = 'Vendido'");
+if ($result) {
+    $faturacao_total = $result->fetch_assoc()['total'];
+}
+$faturacao_formatada = "€ " . number_format($faturacao_total / 1000000, 1) . "M"; 
+if ($faturacao_total < 1000) {
+    $faturacao_formatada = "€ 0";
+}
+// ---------------------------------------------
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -29,8 +63,11 @@
         .bg-highlight-card { background-color: rgb(var(--mdb-dark-rgb)) !important; }
         
         .sidebar-logo { height: 40px; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2)); }
+        
+        /* Estilos específicos para o Dashboard */
         .stat-value { font-size: 2.5rem; font-weight: 800; }
         .stat-label { font-weight: 500; color: rgb(var(--mdb-secondary-rgb)); opacity: 0.7; }
+        
         .admin-title-desktop { font-size: 3rem; font-weight: 800; }
         
         /* === ESTILOS DO SIDEBAR (DARK CLEAN MINIMAL) === */
@@ -40,6 +77,7 @@
             width: 240px; 
             border-right: none !important; 
             box-shadow: none !important;
+            padding-top: 20px;
         }
 
         /* Limpeza e Estilo Padrão dos Itens da Lista */
@@ -92,12 +130,12 @@
             margin: 20px 0; 
         }
 
-        /* Item Sair (Corrigido com Flexbox, logo as regras de position absolute foram removidas) */
+        /* Item Sair */
         .list-group-item.text-danger {
             color: var(--mdb-danger) !important;
             border-top: none !important;
             border-bottom: none !important;
-            margin-bottom: 0 !important; /* Limpa margens desnecessárias no fundo */
+            margin-bottom: 0 !important; 
         }
         .list-group-item.text-danger i {
             color: var(--mdb-danger) !important;
@@ -164,7 +202,7 @@
 
     <nav class="navbar navbar-dark bg-dark d-lg-none" style="background-color: rgb(var(--sidebar-bg)) !important;">
         <div class="container-fluid">
-            <a class="navbar-brand" href="admin-dashboard.html">
+            <a class="navbar-brand" href="admin-dashboard.php">
                 <img src="logo.png" alt="WF Cars" class="sidebar-logo me-2" />
                 <span class="text-highlight">Dashboard</span>
             </a>
@@ -178,13 +216,13 @@
                     <img src="logo.png" alt="WF Cars" class="sidebar-logo mb-3" />
                 </div>
                 <div class="list-group list-group-flush mx-3">
-                    <a href="admin-dashboard.html" class="list-group-item list-group-item-action ripple active">
+                    <a href="admin-dashboard.php" class="list-group-item list-group-item-action ripple active">
                         <i class="fas fa-chart-line fa-fw"></i><span>Dashboard</span>
                     </a>
-                    <a href="admin-active-listings.html" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-active-listings.php" class="list-group-item list-group-item-action ripple">
                         <i class="fas fa-car fa-fw"></i><span>Anúncios Ativos</span>
                     </a>
-                    <a href="admin-new-listing.html" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-new-listing.php" class="list-group-item list-group-item-action ripple">
                         <i class="fas fa-plus fa-fw"></i><span>Novo Anúncio</span>
                     </a>
                 </div>
@@ -192,7 +230,7 @@
 
             <div class="list-group list-group-flush mx-3 mt-auto mb-3">
                  <div class="sidebar-divider"></div>
-                <a href="index.html" class="list-group-item ripple text-danger">
+                <a href="logout.php" class="list-group-item ripple text-danger">
                     <i class="fas fa-sign-out-alt fa-fw"></i><span>Sair</span>
                 </a>
             </div>
@@ -211,7 +249,7 @@
                 <div class="col-md-6 col-lg-3 mb-4">
                     <div class="card bg-highlight-card border-0 shadow-lg">
                         <div class="card-body">
-                            <h5 class="stat-value text-highlight">3</h5>
+                            <h5 class="stat-value text-highlight"><?php echo $ativos_count; ?></h5>
                             <p class="stat-label text-uppercase">Anúncios Ativos</p>
                         </div>
                     </div>
@@ -220,7 +258,7 @@
                 <div class="col-md-6 col-lg-3 mb-4">
                     <div class="card bg-highlight-card border-0 shadow-lg">
                         <div class="card-body">
-                            <h5 class="stat-value text-highlight">5</h5>
+                            <h5 class="stat-value text-highlight">5</h5> 
                             <p class="stat-label text-uppercase">Vendidos (Último Mês)</p>
                         </div>
                     </div>
@@ -229,8 +267,8 @@
                 <div class="col-md-6 col-lg-3 mb-4">
                     <div class="card bg-highlight-card border-0 shadow-lg">
                         <div class="card-body">
-                            <h5 class="stat-value text-highlight">34</h5>
-                            <p class="stat-label text-uppercase">Vendidos (Último Ano)</p>
+                            <h5 class="stat-value text-highlight"><?php echo $vendidos_total_count; ?></h5>
+                            <p class="stat-label text-uppercase">Vendidos (Total)</p>
                         </div>
                     </div>
                 </div>
@@ -238,8 +276,8 @@
                 <div class="col-md-6 col-lg-3 mb-4">
                     <div class="card bg-highlight-card border-0 shadow-lg">
                         <div class="card-body">
-                            <h5 class="stat-value text-highlight">€ 1.2M</h5>
-                            <p class="stat-label text-uppercase">Faturação (Último Ano)</p>
+                            <h5 class="stat-value text-highlight"><?php echo $faturacao_formatada; ?></h5>
+                            <p class="stat-label text-uppercase">Faturação (Total)</p>
                         </div>
                     </div>
                 </div>
@@ -272,11 +310,11 @@
     </main>
     
     <nav class="mobile-nav-app d-lg-none">
-        <a href="admin-dashboard.html" class="mobile-nav-item active">
+        <a href="admin-dashboard.php" class="mobile-nav-item active">
             <i class="fas fa-chart-line"></i>
             <div>Dash</div>
         </a>
-        <a href="admin-active-listings.html" class="mobile-nav-item">
+        <a href="admin-active-listings.php" class="mobile-nav-item">
             <i class="fas fa-car"></i>
             <div>Anúncios</div>
         </a>
@@ -284,11 +322,11 @@
             <i class="fas fa-search-dollar"></i>
             <div>Vendas</div>
         </a>
-        <a href="admin-new-listing.html" class="mobile-nav-item">
+        <a href="admin-new-listing.php" class="mobile-nav-item">
             <i class="fas fa-plus-circle"></i>
             <div>Novo</div>
         </a>
-        <a href="index.html" class="mobile-nav-item">
+        <a href="logout.php" class="mobile-nav-item">
             <i class="fas fa-sign-out-alt"></i>
             <div>Sair</div>
         </a>

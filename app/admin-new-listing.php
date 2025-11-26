@@ -3,6 +3,8 @@
 session_start();
 include 'db_connect.php';
 
+
+
 // Função para mostrar mensagens de status (sucesso/erro)
 function display_status_message() {
     if (isset($_GET['status']) && isset($_GET['message'])) {
@@ -36,7 +38,7 @@ function display_status_message() {
         :root {
             --mdb-dark-rgb: 28, 28, 28;
             --mdb-secondary-rgb: 192, 192, 192; 
-            --mdb-primary-rgb: 10, 10, 10;
+            --mdb-primary-rgb: 10, 10, 10; 
 
             --sidebar-bg: 26, 26, 26; 
             --link-color: 180, 180, 180; 
@@ -85,6 +87,62 @@ function display_status_message() {
             border-color: rgb(var(--mdb-secondary-rgb));
             background-color: rgba(192, 192, 192, 0.05);
         }
+        
+        /* Estilos específicos para a pré-visualização (Drag & Drop) */
+        .preview-item {
+            position: relative;
+            height: 96px; /* h-24 */
+            width: 100%;
+            background-color: rgb(var(--mdb-dark-rgb));
+            border-radius: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 8px; 
+            cursor: grab; /* Indica que o elemento é arrastável */
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .preview-item img {
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+            display: block; 
+        }
+
+        /* Estilo para quando o elemento está a ser arrastado */
+        .dragging {
+            opacity: 0.5;
+            border-color: rgba(var(--mdb-secondary-rgb), 0.8) !important;
+            box-shadow: 0 0 15px rgba(var(--mdb-secondary-rgb), 0.5) !important;
+        }
+        /* Estilo para o drop zone */
+        .drag-over {
+            border-color: rgb(var(--mdb-secondary-rgb)) !important;
+            box-shadow: 0 0 10px rgba(var(--mdb-secondary-rgb), 0.5);
+        }
+
+
+        .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: rgba(220, 38, 38, 0.7); 
+            color: white;
+            padding: 4px;
+            border-radius: 9999px; 
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+            border: none;
+            z-index: 10;
+        }
+        .preview-item:hover .remove-btn {
+            opacity: 1;
+        }
+
 
         /* === ESTILOS DO SIDEBAR (DARK CLEAN MINIMAL) === */
         .sidebar-menu { 
@@ -274,6 +332,10 @@ function display_status_message() {
                         <input type="file" multiple class="d-none" id="image-upload" name="car_images[]" accept="image/jpeg, image/png">
                     </div>
                      <p class="text-info small text-center"><i class="fas fa-info-circle me-1"></i> Use fotos de alta qualidade para atrair compradores.</p>
+                     
+                    <div id="preview-container" class="row g-3 mt-4">
+                    </div>
+
                 </div>
             </div>
 
@@ -373,12 +435,176 @@ function display_status_message() {
     </nav>
     
     <script>
-        document.getElementById('image-upload').addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files.length > 0) {
-                alert(`Selecionados ${files.length} ficheiro(s) para upload. Nota: O processamento de fotos ainda não está ativo no backend.`);
+        const imageUpload = document.getElementById('image-upload');
+        const previewContainer = document.getElementById('preview-container');
+        const maxFiles = 8;
+        
+        let dragSrcEl = null; // Elemento que está a ser arrastado
+
+        /**
+         * FUNÇÕES DE MANIPULAÇÃO DE FICHEIROS
+         */
+        
+        // Função principal para renderizar as miniaturas
+        function renderPreviews() {
+            previewContainer.innerHTML = '';
+            
+            const files = imageUpload.files;
+            
+            if (files.length > maxFiles) {
+                // Se houver mais do que 8, apenas as primeiras 8 serão processadas para evitar erros
+                alert('Atenção: Apenas as primeiras ' + maxFiles + ' fotos serão carregadas no servidor. Para remover, clique no X.');
             }
-        });
+
+            for (let i = 0; i < Math.min(files.length, maxFiles); i++) {
+                const file = files[i];
+                
+                if (file.type.match('image.*')) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        const imgUrl = e.target.result;
+                        const colDiv = document.createElement('div');
+                        colDiv.classList.add('col-6', 'col-md-3', 'col-lg-2');
+                        colDiv.setAttribute('draggable', 'true'); // Torna o elemento arrastável
+                        colDiv.setAttribute('data-index', i); // Guarda o índice original
+                        colDiv.setAttribute('data-file-name', file.name); // Identificador do ficheiro
+                        
+                        colDiv.innerHTML = `
+                            <div class="preview-item">
+                                <img src="${imgUrl}" alt="Preview" />
+                                <button type="button" data-file-name="${file.name}" class="remove-btn">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+                        `;
+                        
+                        previewContainer.appendChild(colDiv);
+
+                        // Adiciona listeners para Drag & Drop e Remoção
+                        colDiv.addEventListener('dragstart', handleDragStart);
+                        colDiv.addEventListener('dragover', handleDragOver);
+                        colDiv.addEventListener('dragleave', handleDragLeave);
+                        colDiv.addEventListener('drop', handleDrop);
+                        colDiv.addEventListener('dragend', handleDragEnd);
+
+                        colDiv.querySelector('.remove-btn').addEventListener('click', function() {
+                            handleRemoveFile(file.name);
+                        });
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        // Remove um ficheiro da FileList e re-renderiza
+        function handleRemoveFile(fileNameToRemove) {
+            const newFiles = new DataTransfer();
+            
+            for (let i = 0; i < imageUpload.files.length; i++) {
+                const file = imageUpload.files[i];
+                if (file.name !== fileNameToRemove) {
+                    newFiles.items.add(file);
+                }
+            }
+
+            imageUpload.files = newFiles.files;
+            renderPreviews();
+        }
+        
+        // Reordena a FileList com base na nova ordem dos elementos DOM
+        function reorderFiles() {
+            const currentFiles = Array.from(imageUpload.files);
+            const orderedFileNames = [];
+            
+            // 1. Obter a ordem atual dos nomes dos ficheiros no DOM
+            document.querySelectorAll('#preview-container > div').forEach(colDiv => {
+                orderedFileNames.push(colDiv.getAttribute('data-file-name'));
+            });
+            
+            // 2. Criar uma nova lista de ficheiros ordenados
+            const reorderedFiles = [];
+            orderedFileNames.forEach(fileName => {
+                const file = currentFiles.find(f => f.name === fileName);
+                if (file) {
+                    reorderedFiles.push(file);
+                }
+            });
+            
+            // 3. Atribuir a nova lista ordenada ao input
+            const newFiles = new DataTransfer();
+            reorderedFiles.forEach(file => newFiles.items.add(file));
+            imageUpload.files = newFiles.files;
+            
+            // Nota: Não é necessário chamar renderPreviews aqui, pois o drag & drop visual já foi feito.
+            // Apenas a lista de ficheiros interna foi sincronizada.
+        }
+
+        /**
+         * FUNÇÕES DRAG AND DROP
+         */
+
+        function handleDragStart(e) {
+            this.style.opacity = '0.5';
+            this.classList.add('dragging');
+            dragSrcEl = this;
+            
+            // Guardar o nome do ficheiro (ou índice) para a transferência de dados
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.getAttribute('data-file-name'));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); // Permite o drop
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Adicionar feedback visual à zona de drop
+            if (this !== dragSrcEl && this.tagName === 'DIV') {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            this.classList.remove('drag-over');
+
+            // Se o drop não for no próprio elemento arrastado
+            if (dragSrcEl !== this) {
+                const container = previewContainer;
+                const dropTarget = this;
+                
+                // Mover visualmente o elemento no DOM
+                const referenceNode = Array.from(container.children).indexOf(dragSrcEl) < Array.from(container.children).indexOf(dropTarget)
+                    ? dropTarget.nextElementSibling
+                    : dropTarget;
+                
+                container.insertBefore(dragSrcEl, referenceNode);
+                
+                // Sincronizar a lista de ficheiros com a nova ordem DOM
+                reorderFiles();
+            }
+        }
+        
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            this.classList.remove('dragging');
+            
+            // Limpar a classe drag-over de todos os elementos
+            document.querySelectorAll('#preview-container > div').forEach(colDiv => {
+                colDiv.classList.remove('drag-over');
+            });
+        }
+        
+
+        // Listener principal para detetar novas seleções de ficheiros
+        imageUpload.addEventListener('change', renderPreviews);
     </script>
 </body>
 </html>
