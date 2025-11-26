@@ -1,0 +1,13 @@
+/* Carrega as diretivas do Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Importa a fonte Poppins do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+/* Regras CSS globais para garantir o look dark em toda a aplicação */
+body {
+    /* Define o fundo principal e a fonte */
+    @apply bg-[#0A0A0A] text-white font-sans;
+}

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WFCARS | Coleção de Luxo Premium</title>
+    <!-- Carrega o framework Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carrega a fonte Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variáveis CSS para Cores Luxury */
+        :root {
+            --color-dark-primary: #0A0A0A; /* Preto Profundo */
+            --color-dark-card: #1C1C1C;
+            --color-highlight: #C8A253; /* Ouro Escovado */
+            --color-subtle: #737373;
+        }
+
+        /* Aplica o estilo de corpo base */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-dark-primary);
+            color: white;
+            /* Esconde o scrollbar enquanto o preloader está ativo */
+            overflow: hidden; 
+        }
+
+        /* Configuração de cores e animações personalizadas para o Tailwind CDN */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-primary': 'var(--color-dark-primary)',
+                        'dark-card': 'var(--color-dark-card)',
+                        'highlight': 'var(--color-highlight)',
+                        'subtle': 'var(--color-subtle)',
+                    },
+                    /* Keyframes para a animação de brilho (shimmer) */
+                    keyframes: {
+                        bounce: {
+                            '0%, 100%': { transform: 'translateY(-25%)', 'animation-timing-function': 'cubic-bezier(0.8, 0, 1, 1)' },
+                            '50%': { transform: 'none', 'animation-timing-function': 'cubic-bezier(0, 0, 0.2, 1)' },
+                        },
+                        shimmer: {
+                            '0%': { 'background-position': '-200% 0' },
+                            '100%': { 'background-position': '200% 0' },
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'shimmer-anim': 'shimmer 2.5s infinite linear',
+                    },
+                }
+            }
+        }
+
+        /* Estilo do Preloader */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-dark-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out; /* Transição para desaparecer suavemente */
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Estilo do Logo com Efeito de Brilho (Shimmer) */
+        .preloader-logo {
+            font-size: 6rem; /* Tamanho grande para o logo */
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: transparent; 
+            /* Gradiente de Ouro, Branco e Cinza para criar o efeito metálico */
+            background: linear-gradient(90deg, 
+                        var(--color-subtle) 0%, 
+                        var(--color-highlight) 25%, 
+                        white 50%, 
+                        var(--color-highlight) 75%, 
+                        var(--color-subtle) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text; 
+            background-clip: text;
+            animation: shimmer-anim 2.5s infinite linear; /* Aplica a animação */
+        }
+
+        /* Classes auxiliares para o logo no header */
+        .header-logo-text { color: var(--color-highlight); }
+        .header-logo-subtext { color: white; }
+    </style>
+</head>
+<body class="bg-dark-primary antialiased">
+
+    <!-- 1. PRELOADER (Aparece antes de tudo) -->
+    <div id="preloader" class="preloader">
+        <div class="preloader-logo">WFCARS</div>
+    </div>
+
+    <!-- 2. HEADER: Navegação Fixo e Luxury -->
+    <header class="fixed top-0 left-0 w-full z-50 bg-dark-primary/95 backdrop-blur-sm border-b border-subtle/30 shadow-lg">
+        <nav class="max-w-7xl mx-auto flex justify-between items-center py-5 px-6 lg:px-8">
+            
+            <!-- LOGO - WFCARS Luxury -->
+            <a href="#" class="header-logo-text text-3xl font-extrabold tracking-widest">
+                WF
+                <span class="header-logo-subtext text-sm font-light block -mt-1 tracking-[.3em]">CARS</span>
+            </a>
+            
+            <!-- Navegação Principal (Desktop) -->
+            <div class="hidden lg:flex space-x-10">
+                <a href="#collection" class="text-white hover:text-highlight transition duration-300 text-lg font-light tracking-wide">
+                    Coleção
+                </a>
+                <a href="#discover" class="text-white hover:text-highlight transition duration-300 text-lg font-light tracking-wide">
+                    Filosofia
+                </a>
+                <a href="#contact" class="text-white hover:text-highlight transition duration-300 text-lg font-light tracking-wide">
+                    Contacto
+                </a>
+            </div>
+            
+            <!-- CTA (Botão de Destaque) -->
+            <a 
+                href="#contact" 
+                class="hidden lg:block bg-highlight text-dark-primary font-bold px-6 py-2 rounded-sm text-lg tracking-wider transition duration-300 hover:bg-white hover:text-dark-primary border-2 border-highlight hover:border-white"
+            >
+                Marcar Test Drive
+            </a>
+            
+            <!-- Ícone para Menu Mobile (simplificado) -->
+            <button class="lg:hidden text-white text-3xl">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 3. HERO SECTION: Impacto Visual -->
+        <section 
+            id="hero" 
+            class="relative h-screen flex items-center justify-start p-6 lg:p-20 pt-20"
+            style="background-image: url('https://placehold.co/1920x1080/0A0A0A/C8A253/png?text=WFCARS+Luxury+Car+Placeholder'); background-size: cover; background-position: center;"
+        >
+            <!-- Overlay Escuro Semi-Transparente -->
+            <div class="absolute inset-0 bg-dark-primary/70 backdrop-brightness-50"></div>
+
+            <!-- Conteúdo Principal -->
+            <div class="relative z-10 max-w-xl text-left p-6 lg:p-8 border-l-4 border-highlight">
+                
+                <!-- Título Principal -->
+                <h1 class="text-5xl lg:text-7xl font-bold tracking-tight mb-4 leading-tight text-white">
+                    A Herança da Performance.
+                    <br>
+                    <span class="text-highlight">O Futuro da Elegância.</span>
+                </h1>
+                
+                <!-- Subtítulo Clean -->
+                <p class="text-xl lg:text-2xl text-gray-300 font-light mb-8">
+                    Curadoria exclusiva de automóveis que definem a excelência.
+                </p>
+                
+                <!-- Botão de Chamada para Ação -->
+                <a 
+                    href="#collection" 
+                    class="bg-highlight text-dark-primary font-bold px-10 py-3 rounded-sm text-lg tracking-wider transition duration-300 hover:bg-white hover:text-dark-primary border-2 border-highlight"
+                >
+                    Explore a Coleção
+                </a>
+            </div>
+            
+            <!-- Seta sutil para baixo -->
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-10">
+                <svg class="w-8 h-8 text-highlight animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </section><!-- 4. SECÇÃO: Coleção em Foco -->
+        <section id="collection" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-primary">
+            <div class="max-w-7xl mx-auto text-center">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-4 text-white">
+                    Coleção <span class="text-highlight">Em Foco</span>
+                </h2>
+                <p class="text-xl text-subtle mb-16 max-w-3xl mx-auto">
+                    A nossa curadoria exclusiva abrange o pináculo do design e engenharia automóvel.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <!-- Card 1: Hyper-Performance -->
+                    <div class="group bg-dark-card p-8 rounded-sm border border-subtle/30 hover:border-highlight transition duration-500 cursor-pointer shadow-xl hover:shadow-highlight/20 transform hover:-translate-y-2">
+                        <h3 class="text-3xl font-semibold mb-3 text-white group-hover:text-highlight transition duration-500">
+                            Hyper-Performance
+                        </h3>
+                        <p class="text-subtle text-lg font-light">
+                            Viaturas de ponta, limitadas e construídas para a velocidade máxima.
+                        </p>
+                        <span class="mt-4 inline-block text-highlight group-hover:text-white transition duration-500 text-sm tracking-widest">
+                            VER MODELOS &rarr;
+                        </span>
+                    </div>
+
+                    <!-- Card 2: Clássicos Atemporais -->
+                    <div class="group bg-dark-card p-8 rounded-sm border border-subtle/30 hover:border-highlight transition duration-500 cursor-pointer shadow-xl hover:shadow-highlight/20 transform hover:-translate-y-2">
+                        <h3 class="text-3xl font-semibold mb-3 text-white group-hover:text-highlight transition duration-500">
+                            Clássicos Atemporais
+                        </h3>
+                        <p class="text-subtle text-lg font-light">
+                            Onde a história do automobilismo encontra a perfeição restaurada.
+                        </p>
+                        <span class="mt-4 inline-block text-highlight group-hover:text-white transition duration-500 text-sm tracking-widest">
+                            VER MODELOS &rarr;
+                        </span>
+                    </div>
+
+                    <!-- Card 3: Luxury SUV / Urban -->
+                    <div class="group bg-dark-card p-8 rounded-sm border border-subtle/30 hover:border-highlight transition duration-500 cursor-pointer shadow-xl hover:shadow-highlight/20 transform hover:-translate-y-2">
+                        <h3 class="text-3xl font-semibold mb-3 text-white group-hover:text-highlight transition duration-500">
+                            Luxury SUV / Urban
+                        </h3>
+                        <p class="text-subtle text-lg font-light">
+                            Potência e conforto inigualáveis para a sofisticação diária.
+                        </p>
+                        <span class="mt-4 inline-block text-highlight group-hover:text-white transition duration-500 text-sm tracking-widest">
+                            VER MODELOS &rarr;
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. SECÇÃO: Sobre a Empresa (Filosofia) -->
+        <section id="discover" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-card">
+            <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 text-left">
+                <!-- Imagem de Contexto -->
+                <div class="lg:w-1/2">
+                    <img 
+                        src="https://placehold.co/800x600/1C1C1C/C8A253/png?text=WFCARS+Concierge" 
+                        alt="Serviço de Concierge Luxury" 
+                        class="w-full h-auto object-cover rounded-sm shadow-2xl border border-subtle/30"
+                    />
+                </div>
+                
+                <!-- Conteúdo do About -->
+                <div class="lg:w-1/2">
+                    <h2 class="text-4xl lg:text-5xl font-bold mb-4 text-white text-left">
+                        A Nossa <span class="text-highlight">Filosofia</span>
+                    </h2>
+                    <p class="text-xl text-gray-400 mb-6">
+                        Na WF CARS, não negociamos apenas carros; cultivamos relacionamentos e garantimos o seu legado automóvel.
+                    </p>
+                    <ul class="space-y-4 text-lg text-gray-300">
+                        <li class="flex items-start">
+                            <span class="text-highlight mr-3 text-2xl">&bull;</span>
+                            <p><strong class="text-white">Autenticidade e Proveniência:</strong> Cada veículo é submetido a uma inspeção rigorosa para garantir a história e a qualidade.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-highlight mr-3 text-2xl">&bull;</span>
+                            <p><strong class="text-white">Serviço de Concierge:</strong> Desde a aquisição à entrega discreta, o nosso serviço é totalmente personalizado e confidencial.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-highlight mr-3 text-2xl">&bull;</span>
+                            <p><strong class="text-white">Excelência Pós-Venda:</strong> A sua satisfação e manutenção do seu investimento são a nossa prioridade a longo prazo.</p>
+                        </li>
+                    </ul>
+                    <a 
+                        href="#contact" 
+                        class="mt-8 inline-block bg-transparent text-highlight font-bold px-8 py-3 rounded-sm text-lg tracking-wider border-2 border-highlight hover:bg-highlight hover:text-dark-primary transition duration-300"
+                    >
+                        Falar com um Especialista
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. SECÇÃO: Contacto (Formulário Discreto) -->
+        <section id="contact" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-primary">
+            <div class="max-w-3xl mx-auto text-center">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-4 text-white">
+                    O Seu Próximo <span class="text-highlight">Investimento</span>
+                </h2>
+                <p class="text-xl text-subtle mb-10">
+                    A discrição começa no primeiro contacto. Preencha o formulário e um concierge dedicado entrará em contacto em 24h.
+                </p>
+
+                <form class="space-y-6 text-left" onsubmit="event.preventDefault(); alert('Mensagem enviada com sucesso! O seu concierge WFCARS entrará em contacto em breve.');">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-highlight mb-2">Nome Completo</label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            class="w-full p-4 bg-dark-card border border-subtle/50 text-white focus:ring-highlight focus:border-highlight rounded-sm transition duration-300" 
+                            placeholder="João Silva" 
+                        />
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-highlight mb-2">Email</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            class="w-full p-4 bg-dark-card border border-subtle/50 text-white focus:ring-highlight focus:border-highlight rounded-sm transition duration-300" 
+                            placeholder="o-seu-email@exemplo.com" 
+                        />
+                    </div>
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-highlight mb-2">Mensagem ou Modelo de Interesse</label>
+                        <textarea 
+                            id="message" 
+                            rows="4" 
+                            class="w-full p-4 bg-dark-card border border-subtle/50 text-white focus:ring-highlight focus:border-highlight rounded-sm transition duration-300" 
+                            placeholder="Gostaria de agendar uma visualização privada do modelo clássico."
+                        ></textarea>
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        class="w-full bg-highlight text-dark-primary font-bold px-10 py-4 rounded-sm text-xl tracking-wider hover:bg-white transition duration-300"
+                    >
+                        Solicitar Contacto
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="py-8 text-center border-t border-subtle/30 text-subtle text-sm">
+        <p>&copy; 2024 WF CARS. Todos os direitos reservados. | Design Luxury Dark.</p>
+    </footer>
+
+    <script>
+        // Script para esconder o preloader e permitir o scroll
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                // Adiciona um atraso para a animação do brilho ser visível
+                setTimeout(() => {
+                    preloader.classList.add('hidden');
+                    document.body.style.overflow = 'auto'; // Reativa o scroll
+                }, 2500); // 2.5 segundos (tempo da animação do brilho)
+            }
+        });
+
+        // Pequeno script JS para animação de scroll suave (opcional, mas bom para UX)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
