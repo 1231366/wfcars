@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WFCARS | Coleção de Luxo Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-primary': 'var(--color-dark-primary)',
+                        'dark-card': 'var(--color-dark-card)',
+                        'highlight': 'var(--color-highlight)', // AGORA PRATEADO
+                        'subtle': 'var(--color-subtle)',
+                        'light-accent': 'var(--color-light-accent)',
+                    },
+                    keyframes: {
+                        bounce: {
+                            '0%, 100%': { transform: 'translateY(-25%)', 'animation-timing-function': 'cubic-bezier(0.8, 0, 1, 1)' },
+                            '50%': { transform: 'none', 'animation-timing-function': 'cubic-bezier(0, 0, 0.2, 1)' },
+                        },
+                        'pulse-glow': {
+                            // Pulso Prateado/Cromo
+                            '0%, 100%': { filter: 'drop-shadow(0 0 4px rgba(224, 224, 224, 0.4))' },
+                            '50%': { filter: 'drop-shadow(0 0 12px var(--color-highlight))' },
+                        },
+                        'subtle-shimmer': {
+                            '0%': { 'background-position': '-1000px 0' },
+                            '100%': { 'background-position': '1000px 0' },
+                        },
+                        'pulse-shadow': {
+                            // Pulso Prateado/Cromo
+                            '0%, 100%': { 'box-shadow': '0 0 10px rgba(224, 224, 224, 0.3)' },
+                            '50%': { 'box-shadow': '0 0 20px rgba(224, 224, 224, 0.6)' },
+                        },
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'logo-pulse': 'pulse-glow 1.5s infinite ease-in-out', 
+                        'shimmer-card': 'subtle-shimmer 4s infinite linear',
+                        'button-pulse': 'pulse-shadow 1.5s infinite ease-in-out', 
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Variáveis CSS para Cores Luxury */
+        :root {
+            --color-dark-primary: #0A0A0A;
+            --color-dark-card: #1C1C1C;
+            --color-highlight: #E0E0E0; /* PRATEADO/CROMO LUXUOSO */
+            --color-subtle: #737373;
+            --color-light-accent: #333333;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-dark-primary);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        /* Sombra de Texto para efeito Premium/Brilho */
+        .premium-text-shadow {
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8), 0 0 5px rgba(255, 255, 255, 0.1);
+        }
+        
+        /* HEADER NAV LINKS REFINADO */
+        .nav-link-refined {
+            @apply text-white font-normal tracking-widest text-lg hover:text-highlight transition duration-300 border-b-2 border-transparent hover:border-highlight pb-1;
+        }
+
+        /* ESTILO DO INPUT DE PESQUISA (MAIN BAR) */
+        .search-input {
+            @apply w-full p-4 bg-white text-dark-primary border-2 border-highlight/50 focus:border-highlight focus:ring-highlight rounded-sm transition duration-300 placeholder-subtle font-medium shadow-lg;
+            
+            /* Seta Dropdown Personalizada em PRATEADO */
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23E0E0E0%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2em;
+        }
+
+        .price-tag {
+            @apply absolute top-0 right-0 bg-highlight/90 backdrop-blur-sm text-dark-primary font-extrabold text-xl py-2 px-6 rounded-bl-lg tracking-wide shadow-lg;
+        }
+        
+        .shimmer-border { position: relative; overflow: hidden; }
+        .shimmer-border::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, var(--color-dark-card) 0%, var(--color-highlight) 50%, var(--color-dark-card) 100%);
+            background-size: 200% 100%; z-index: -1; padding: 1px; 
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: subtle-shimmer 4s infinite linear;
+        }
+        .card-inner { @apply bg-dark-card h-full w-full p-6 lg:p-8 rounded-sm; }
+
+        /* AJUSTES PARA O HERO BACKGROUND - IMAGEM VIBRANTE */
+        .hero-background {
+            background-size: cover;
+            background-position: center 55%; 
+            background-repeat: no-repeat; 
+        }
+
+        .hero-overlay {
+            background-image: none; /* Overlay removido */
+        }
+        
+        /* ESTILOS DO PRELOADER */
+        .preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--color-dark-primary);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 1.5s ease-out; 
+        }
+        .preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        
+        .preloader-logo-text { 
+            font-size: 4.5rem; 
+            font-weight: 900; 
+            letter-spacing: 0.2em;
+            display: block;
+            line-height: 0.8;
+        }
+
+        .header-logo-text { color: var(--color-highlight); }
+        .header-logo-subtext { color: white; }
+        
+        /* Estilo para a nova secção FAQ (Acordeão) */
+        .faq-item {
+            @apply border-b border-subtle/50 py-4 transition duration-300;
+        }
+        .faq-header {
+            @apply flex justify-between items-center text-xl font-medium cursor-pointer relative z-10; 
+        }
+        .faq-icon {
+            @apply text-highlight transform transition-transform duration-300;
+        }
+        .faq-content {
+            @apply text-subtle pt-3 transition-all duration-500 ease-in-out;
+            height: 0;
+            overflow: hidden; 
+        }
+
+        /* NOVOS ESTILOS PARA O FORMULÁRIO DE CONTACTO - PRATEADO */
+        .contact-input {
+            /* Fundo escuro coeso com a página, borda elegante e fina */
+            background-color: var(--color-dark-primary) !important; 
+            border: 1px solid var(--color-highlight) !important;
+            border-color: rgba(224, 224, 224, 0.4) !important; /* Borda prateada suave */
+            color: white !important; 
+            font-weight: 300 !important; 
+            letter-spacing: 0.05em !important; 
+            padding: 0.8rem 1rem !important; 
+            border-radius: 0.25rem !important;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5) inset; 
+            
+            @apply w-full backdrop-blur-sm shadow-xl transition duration-300;
+            @apply focus:border-highlight focus:ring-2 focus:ring-highlight/50 outline-none; 
+        }
+        
+        .contact-input::placeholder {
+            color: var(--color-subtle) !important;
+            opacity: 0.8 !important;
+            font-style: italic;
+            font-size: 0.95rem; 
+        }
+        
+        /* Ajuste específico para selects no formulário de contacto */
+        .contact-select {
+            appearance: none; 
+            /* Injeta SVG PRATEADO para a seta */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23E0E0E0%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2em;
+            padding-right: 3rem; 
+        }
+
+        .contact-textarea {
+            @apply resize-y; 
+            min-height: 150px !important; 
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+
+        .contact-label {
+            @apply block text-base font-medium text-highlight mb-1 tracking-wider; 
+        }
+        
+        /* Container do Formulário - Glassmorphism Light */
+        .contact-form-container {
+            @apply max-w-4xl mx-auto text-center p-8 lg:p-12 rounded-xl shadow-2xl bg-dark-card/70 backdrop-blur-lg border border-highlight/20;
+        }
+
+        /* Botão de Envio Premium (PRATEADO Forte com Animação) */
+        .submit-button-premium {
+            /* Usamos um preto mais profundo para o texto para contraste com o botão prateado */
+            @apply w-full bg-highlight text-dark-primary font-black px-10 py-5 rounded-lg text-xl tracking-widest shadow-xl transition duration-500 hover:bg-white hover:shadow-highlight/70 uppercase mt-8 animate-button-pulse; 
+        }
+
+        /* Keyframes CSS (Mantidos mas adaptados à cor mais clara no drop-shadow) */
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(224, 224, 224, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px var(--color-highlight)); }
+        }
+        
+        @keyframes subtle-shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        @keyframes pulse-shadow {
+            0%, 100% { box-shadow: 0 0 15px rgba(224, 224, 224, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(224, 224, 224, 0.8); }
+        }
+    </style>
+</head>
+<body class="bg-dark-primary antialiased">
+
+    <div id="preloader" class="preloader">
+        <div class="text-center">
+             <span class="preloader-logo-text header-logo-text font-extrabold animate-logo-pulse">
+                 WF
+             </span>
+             <span class="header-logo-subtext text-2xl lg:text-3xl font-light block -mt-3 tracking-[.3em] opacity-80">
+                 CARS
+             </span>
+        </div>
+    </div>
+
+    <header class="fixed top-0 left-0 w-full z-50 bg-dark-primary/95 backdrop-blur-md border-b border-highlight/30 shadow-2xl">
+        <nav class="max-w-8xl mx-auto flex justify-between items-center py-5 px-6 lg:px-12">
+            
+            <a href="#" class="header-logo-text text-3xl font-extrabold tracking-widest">
+                WF
+                <span class="header-logo-subtext text-sm font-light block -mt-1 tracking-[.3em]">CARS</span>
+            </a>
+            
+            <div class="hidden lg:flex space-x-10">
+                <a href="#inventory" class="nav-link-refined">Inventário</a>
+                <a href="#about-faq" class="nav-link-refined">Sobre Nós</a> 
+                <a href="#features" class="nav-link-refined">Filosofia</a>
+                <a href="#services" class="nav-link-refined">Serviços</a>
+                <a href="#contact" class="nav-link-refined">Contacto</a>
+            </div>
+            
+            <a 
+                href="#contact" 
+                class="hidden lg:block bg-highlight text-dark-primary font-bold px-8 py-3 rounded-full text-lg tracking-widest shadow-xl transition duration-500 hover:bg-white hover:shadow-highlight/50"
+            >
+                Consulta Privada
+            </a>
+            
+            <button class="lg:hidden text-white text-3xl">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <section 
+            id="hero" 
+            class="relative h-[100vh] flex flex-col items-start justify-end p-6 lg:p-12 pb-24 lg:pb-40 hero-background" 
+            style="background-image: url('heroimage.jpeg');"
+        >
+            <div class="absolute inset-0 hero-overlay"></div>
+
+            <div class="absolute top-48 left-1/2 transform -translate-x-1/2 lg:top-60 lg:left-12 lg:transform-none z-10 w-full max-w-7xl text-left"> 
+                
+                <h1 class="text-3xl lg:text-5xl font-extrabold mb-4 leading-tight text-white uppercase max-w-lg premium-text-shadow">
+                    <span class="text-highlight block text-2xl lg:text-3xl mb-1 font-normal tracking-wider">A Sua Próxima História.</span>
+                    Onde o Seu Sonho <br/> Encontra a Estrada.
+                </h1>
+                
+                <div class="relative z-10 block">
+                    <p class="text-subtle text-sm mb-2 tracking-widest">SCROLL PARA EXPLORAR O INVENTÁRIO</p>
+                    <svg class="w-8 h-8 text-highlight animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </div>
+            
+        </section>
+
+        <section id="search-bar" class="py-10 px-6 lg:px-12 bg-dark-primary border-b border-highlight/30">
+             <div class="max-w-6xl mx-auto shadow-2xl border border-highlight/30 rounded-sm p-6 bg-dark-card/90">
+                <form class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    
+                    <select class="search-input">
+                        <option value="" disabled selected>MARCA</option>
+                        <option value="Mercedes-Benz">Mercedes-Benz</option>
+                        <option value="Ferrari">Ferrari</option>
+                        <option value="Rolls-Royce">Rolls-Royce</option>
+                        <option value="Porsche">Porsche</option>
+                    </select>
+                    
+                    <select class="search-input">
+                        <option value="" disabled selected>ANO MÍN.</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2020">2020</option>
+                        <option value="2015">2015+</option>
+                    </select>
+                    
+                    <select class="search-input">
+                        <option value="" disabled selected>PREÇO MÍN.</option>
+                        <option value="100000">&euro;100.000</option>
+                        <option value="250000">&euro;250.000</option>
+                        <option value="500000">&euro;500.000</option>
+                    </select>
+                    
+                    <select class="search-input hidden md:block">
+                        <option value="" disabled selected>PREÇO MÁX.</option>
+                        <option value="250000">&euro;250.000</option>
+                        <option value="500000">&euro;500.000</option>
+                        <option value="1000000">&euro;1.000.000+</option>
+                    </select>
+                    
+                    <button 
+                        type="submit" 
+                        class="w-full bg-highlight text-dark-primary font-black py-4 rounded-sm tracking-widest shadow-lg transition duration-300 hover:bg-white col-span-2 md:col-span-1 flex items-center justify-center space-x-2"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <span class="hidden lg:inline">PESQUISAR</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+        
+        <section id="about-faq" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-card">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                
+                <div class="order-2 lg:order-1">
+                    <h2 class="text-5xl lg:text-6xl font-extrabold mb-8 leading-tight text-white uppercase">
+                        O Seu Próximo <span class="text-highlight block">Investimento.</span>
+                    </h2>
+                    
+                    <div id="faq-accordion" class="space-y-4 mt-10">
+                        
+                        <div class="faq-item">
+                            <div class="faq-header" onclick="toggleFaq(this)">
+                                Posso agendar um test drive de uma viatura?
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-content">
+                                <p>Sim, pode agendar um test drive online para a maioria das nossas viaturas de luxo. A nossa equipa entrará em contacto para confirmar os detalhes e a sua disponibilidade.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-header" onclick="toggleFaq(this)">
+                                Oferecem opções de financiamento exclusivas?
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-content">
+                                <p>Trabalhamos com parceiros financeiros de luxo para estruturar soluções de leasing ou crédito confidenciais e personalizadas, adequadas a viaturas de alto valor e garantindo a máxima discrição.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-header" onclick="toggleFaq(this)">
+                                Qual é a vossa política de retorno e proveniência?
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-content">
+                                <p>Cada viatura passa por uma rigorosa certificação de autenticidade e proveniência. A nossa garantia assegura a integridade do veículo. Termos específicos de retorno são delineados no contrato de aquisição.</p>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <div class="order-1 lg:order-2 relative">
+                    <div class="relative h-[400px] lg:h-[550px] overflow-hidden rounded-lg shadow-2xl w-11/12 mx-auto lg:w-full">
+                        <img 
+                            src="keys.jpg" 
+                            alt="Chave de carro de luxo" 
+                            class="w-full h-full object-cover filter brightness-75"
+                        />
+                    </div>
+                    
+                    <div class="absolute bottom-[-50px] right-0 lg:bottom-[-80px] lg:right-[-50px] flex space-x-4">
+                        <div class="bg-dark-primary p-6 lg:p-8 w-[150px] lg:w-[200px] shadow-2xl border-t-4 border-highlight">
+                            <p class="text-4xl lg:text-5xl font-black text-highlight">100+</p>
+                            <p class="text-subtle mt-2">Clientes Satisfeitos</p>
+                        </div>
+                        <div class="bg-dark-primary p-6 lg:p-8 w-[150px] lg:w-[200px] shadow-2xl border-t-4 border-highlight">
+                            <p class="text-4xl lg:text-5xl font-black text-highlight">16</p>
+                            <p class="text-subtle mt-2">Países Servidos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="py-20 lg:py-32 px-6 lg:px-8 bg-light-accent">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl lg:text-5xl font-extrabold mb-4 text-white text-left border-l-4 border-highlight pl-4">
+                    A Nossa <span class="text-highlight">Filosofia</span>
+                </h2>
+                <p class="text-xl text-subtle mb-16 max-w-3xl text-left">
+                    Mais do que transações, cultivamos relações baseadas na confiança e excelência.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    
+                    <div class="lg:col-span-2 bg-dark-card p-10 rounded-sm shadow-2xl border-t-8 border-highlight">
+                        <h3 class="text-5xl font-black text-highlight mb-4">
+                            10 Anos de Legado.
+                        </h3>
+                        <p class="text-xl text-gray-300 leading-relaxed">
+                            Na WF CARS, a excelência não é um objetivo, é a nossa herança. Desde a fundação, dedicamo-nos à curadoria dos veículos mais raros e significativos do mundo. Conhecimento, proveniência e discrição definem cada interação.
+                        </p>
+                    </div>
+
+                    <div class="p-6 bg-dark-card rounded-sm border border-subtle/50 hover:border-highlight transition duration-300">
+                        <p class="text-highlight text-4xl font-black mb-3">01</p>
+                        <h4 class="text-xl font-semibold text-white mb-2">Autenticidade Garantida</h4>
+                        <p class="text-subtle">Inspeção e certificação rigorosa da história e integridade de cada peça.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-dark-card rounded-sm border border-subtle/50 hover:border-highlight transition duration-300">
+                        <p class="text-highlight text-4xl font-black mb-3">02</p>
+                        <h4 class="text-xl font-semibold text-white mb-2">Concierge Pessoal</h4>
+                        <p class="text-subtle">Serviço individualizado, desde a aquisição à entrega discreta em qualquer parte do mundo.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="inventory" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-primary">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl lg:text-5xl font-extrabold mb-4 text-white text-center">
+                    Coleção <span class="text-highlight">Exclusiva</span>
+                </h2>
+                <p class="text-xl text-subtle mb-16 max-w-3xl mx-auto text-center">
+                    Viaturas que são investimentos e declarações de intenção.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    
+                    <div class="relative group shimmer-border cursor-pointer">
+                        <div class="card-inner">
+                            <div class="overflow-hidden mb-4">
+                                <img 
+                                    src="heroimage.jpeg" 
+                                    alt="Mercedes-Benz AMG GT Black Series" 
+                                    class="w-full h-auto object-cover group-hover:scale-105 transition duration-700"
+                                />
+                            </div>
+                            <div class="price-tag">&euro; 650.000</div>
+                            
+                            <h3 class="text-3xl font-black mb-1 text-white group-hover:text-highlight transition duration-500">
+                                AMG GT Black Series
+                            </h3>
+                            <p class="text-subtle text-lg font-light mb-4">
+                                2022 | 800km | **Hypercar**
+                            </p>
+                            <div class="flex justify-between items-center border-t border-subtle/30 pt-3">
+                                <span class="text-highlight font-medium tracking-wider">
+                                    730 cv | V8 Bi-Turbo
+                                </span>
+                                <a href="#" class="text-white hover:text-highlight transition duration-300">
+                                    VER &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-dark-card rounded-sm shadow-xl group overflow-hidden border border-subtle/30 hover:border-highlight transition duration-500 cursor-pointer">
+                        <div class="overflow-hidden">
+                            <img 
+                                src="https://placehold.co/600x400/1C1C1C/E0E0E0/png?text=Rolls-Royce+Ghost" 
+                                alt="Rolls-Royce Ghost" 
+                                class="w-full h-auto object-cover group-hover:scale-105 transition duration-500"
+                            />
+                        </div>
+                        <div class="price-tag">&euro; 380.000</div>
+                        
+                        <div class="p-6">
+                            <h3 class="text-3xl font-black mb-1 text-white group-hover:text-highlight transition duration-500">
+                                Rolls-Royce Ghost
+                            </h3>
+                            <p class="text-subtle text-lg font-light mb-4">
+                                2023 | Novo | **V12**
+                            </p>
+                            <div class="flex justify-between items-center border-t border-subtle/30 pt-3">
+                                <span class="text-highlight font-medium tracking-wider">
+                                    Conforto Absoluto
+                                </span>
+                                <a href="#" class="text-white hover:text-highlight transition duration-300">
+                                    VER &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative bg-dark-card rounded-sm shadow-xl group overflow-hidden border border-subtle/30 hover:border-highlight transition duration-500 cursor-pointer">
+                        <div class="overflow-hidden">
+                            <img 
+                                src="https://placehold.co/600x400/1C1C1C/E0E0E0/png?text=Porsche+Classic" 
+                                alt="Porsche 911 Targa Classic" 
+                            class="w-full h-auto object-cover group-hover:scale-105 transition duration-500"
+                            />
+                        </div>
+                        <div class="price-tag">&euro; 220.000</div>
+                        
+                        <div class="p-6">
+                            <h3 class="text-3xl font-black mb-1 text-white group-hover:text-highlight transition duration-500">
+                                Porsche 911 Targa (964)
+                            </h3>
+                            <p class="text-subtle text-lg font-light mb-4">
+                                1991 | 55.000km | **Coleção**
+                            </p>
+                             <div class="flex justify-between items-center border-t border-subtle/30 pt-3">
+                                <span class="text-highlight font-medium tracking-wider">
+                                    Restaurado
+                                </span>
+                                <a href="#" class="text-white hover:text-highlight transition duration-300">
+                                    VER &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" class="py-20 lg:py-32 px-6 lg:px-8 bg-light-accent">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl lg:text-5xl font-extrabold mb-4 text-white text-center">
+                    Os Nossos <span class="text-highlight">Pilares</span>
+                </h2>
+                <p class="text-xl text-subtle mb-16 max-w-3xl mx-auto text-center">
+                    Cada serviço é um compromisso com o seu padrão de excelência.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="relative group overflow-hidden rounded-sm shadow-2xl">
+                        <img 
+                            src="https://placehold.co/1200x800/1C1C1C/E0E0E0/png?text=Concierge+Personalizado" 
+                            alt="Serviço de Concierge Luxury" 
+                            class="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                        />
+                         <div class="absolute inset-0 bg-dark-primary/70 flex flex-col justify-end p-8">
+                            <h3 class="text-5xl font-black text-highlight mb-2">Concierge</h3>
+                            <p class="text-white text-xl border-l-4 border-white/50 pl-3">O seu consultor pessoal, disponível 24/7. Desde logística à documentação.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-rows-3 gap-8">
+                        
+                        <div class="flex p-6 bg-dark-card rounded-sm border border-subtle/50 hover:border-highlight transition duration-300 items-center">
+                            <div class="text-highlight mr-6 flex-shrink-0">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-black text-white mb-1">Financiamento Confidencial</h4>
+                                <p class="text-subtle">Estruturação financeira que respeita o seu anonimato e ambição.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex p-6 bg-dark-card rounded-sm border border-subtle/50 hover:border-highlight transition duration-300 items-center">
+                            <div class="text-highlight mr-6 flex-shrink-0">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-black text-white mb-1">Sourcing Global VIP</h4>
+                                <p class="text-subtle">Aceda a inventários privados e modelos 'off-market' em todo o mundo.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex p-6 bg-dark-card rounded-sm border border-subtle/50 hover:border-highlight transition duration-300 items-center">
+                            <div class="text-highlight mr-6 flex-shrink-0">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37-2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-black text-white mb-1">Manutenção Certificada</h4>
+                                <p class="text-subtle">Preservação do valor através de técnicos exclusivos e peças originais.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-20 lg:py-32 px-6 lg:px-8 bg-dark-primary">
+            <div class="contact-form-container">
+                <h2 class="text-4xl lg:text-5xl font-extrabold mb-4 text-white">
+                    Comece a Sua <span class="text-highlight">Jornada</span>
+                </h2>
+                <p class="text-xl text-subtle mb-10">
+                    O primeiro passo para o seu próximo investimento. A confidencialidade é a nossa prioridade.
+                </p>
+
+                <form class="space-y-6 text-left" onsubmit="event.preventDefault(); alert('Mensagem enviada com sucesso! O seu concierge WFCARS entrará em contacto em breve.');">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div class="flex flex-col">
+                            <label for="name" class="contact-label">Nome Completo</label>
+                            <input type="text" id="name" class="contact-input" placeholder="O seu nome" required />
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="email" class="contact-label">Email</label>
+                            <input type="email" id="email" class="contact-input" placeholder="O seu melhor email" required />
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col">
+                         <label for="phone" class="contact-label">Telefone</label>
+                         <input type="tel" id="phone" class="contact-input" placeholder="O seu número de contacto (opcional)" />
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="subject" class="contact-label">Assunto de Interesse</label>
+                        <select id="subject" class="contact-input contact-select" required>
+                            <option value="" disabled selected>Selecione uma opção</option>
+                            <option value="Aquisição">Aquisição de Novo Modelo</option>
+                            <option value="Sourcing">Sourcing Global de Peça Rara</option>
+                            <option value="Financiamento">Financiamento / Leasing</option>
+                            <option value="Manutenção">Manutenção / Detalhamento</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="message" class="contact-label">Detalhes do Pedido</label>
+                        <textarea 
+                            id="message" 
+                            rows="4" 
+                            class="contact-input contact-textarea" 
+                            placeholder="Descreva o veículo ou o serviço que procura em detalhe."
+                            required
+                        ></textarea>
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        class="submit-button-premium"
+                    >
+                        SOLICITAR CONTACTO
+                    </button>
+                </form>
+            </div>
+        </section>
+        </main>
+
+    <footer class="py-8 text-center border-t border-highlight/30 text-subtle text-sm bg-dark-card">
+        <p>&copy; 2025 WF CARS. O Seu Concierge Automóvel. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Função para o acordeão (FAQ)
+        function toggleFaq(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.faq-icon');
+            
+            // Fecha todos os outros
+            document.querySelectorAll('.faq-content').forEach(c => {
+                if (c !== content && c.style.height && c.style.height !== '0px') {
+                    c.style.height = '0px'; 
+                    c.previousElementSibling.querySelector('.faq-icon').classList.remove('rotate-45');
+                }
+            });
+
+            // Abre/fecha o atual
+            icon.classList.toggle('rotate-45');
+
+            if (content.style.height && content.style.height !== '0px') {
+                content.style.height = '0px';
+            } else {
+                content.style.height = content.scrollHeight + "px";
+            }
+        }
+        
+        // Script para esconder o preloader e permitir o scroll
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                // Acelerar o tempo de fade
+                setTimeout(() => {
+                    preloader.classList.add('hidden');
+                }, 1500); 
+            }
+        });
+
+        // Script para scroll suave
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

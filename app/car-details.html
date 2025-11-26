@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WFCARS | Porsche 911 GT3 - Detalhes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variáveis CSS para Cores Luxury */
+        :root {
+            --color-dark-primary: #0A0A0A;
+            --color-dark-card: #1C1C1C;
+            --color-highlight: #E0E0E0; /* PRATEADO/CROMO LUXUOSO */
+            --color-subtle: #737373;
+            --color-light-accent: #333333;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-dark-primary);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        /* HEADER / MENU STYLES */
+        .nav-link-refined {
+            @apply text-white font-normal tracking-widest text-lg hover:text-highlight transition duration-300 border-b-2 border-transparent hover:border-highlight pb-1 uppercase;
+        }
+        .contact-button-top {
+             @apply bg-highlight text-dark-primary font-bold px-6 py-3 rounded-full text-lg tracking-widest shadow-xl transition duration-500 hover:bg-white hover:shadow-highlight/70 ml-6;
+        }
+        .header-logo-text { color: var(--color-highlight); }
+        .header-logo-subtext { color: white; }
+        
+        /* SLIDER/GALLERY STYLING */
+        .gallery-container {
+            /* Força o scroll horizontal e esconde a scrollbar padrão */
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            overflow-x: scroll;
+            overflow-y: hidden; 
+            white-space: nowrap;
+        }
+        .gallery-container::-webkit-scrollbar {
+            display: none;
+        }
+        .gallery-item {
+            scroll-snap-align: center;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+        .gallery-nav-button {
+            @apply absolute top-1/2 transform -translate-y-1/2 p-3 rounded-full bg-dark-card/70 text-white hover:bg-highlight hover:text-dark-primary transition duration-300 z-20 shadow-xl;
+        }
+
+        /* TÍTULO HERO DETAIL */
+        .detail-title-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none; /* Permite clicar no carro por baixo, se necessário */
+        }
+        .detail-title-content {
+             /* Posicionamento do texto no topo esquerdo */
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            pointer-events: auto; /* Permite selecionar o texto */
+        }
+        @media (min-width: 1024px) {
+             .detail-title-content {
+                top: 25%;
+                left: 5%;
+                transform: none;
+                width: auto;
+            }
+        }
+        .detail-price-tag {
+            @apply absolute top-6 right-6 bg-highlight/90 backdrop-blur-sm text-dark-primary font-extrabold text-xl py-2 px-6 rounded-bl-lg tracking-wide shadow-lg pointer-events: auto;
+        }
+
+        /* SPECS SECTION STYLING */
+        .spec-item {
+            @apply flex justify-between items-center py-3 border-b border-subtle/30;
+        }
+        .spec-label {
+            @apply text-subtle font-medium tracking-wider text-sm lg:text-base;
+        }
+        .spec-value {
+            @apply text-white font-bold text-sm lg:text-base;
+        }
+        
+        /* PERFORMANCE HIGHLIGHTS STYLING */
+        .highlight-value {
+            @apply text-5xl lg:text-7xl font-black text-highlight;
+        }
+        .highlight-unit {
+            @apply text-xl font-light;
+        }
+        .highlight-label {
+            @apply text-subtle mt-3 uppercase tracking-wider text-sm;
+        }
+
+        /* MOBILE MENU OVERLAY (Mantido) */
+        .mobile-menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--color-dark-primary); z-index: 90; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transform: scale(0.9);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        }
+        .mobile-menu-overlay.open { opacity: 1; visibility: visible; transform: scale(1); }
+        .mobile-nav-link { @apply text-white text-4xl font-extrabold py-3 tracking-widest transition duration-300; text-shadow: 0 0 10px rgba(0, 0, 0, 0.8); }
+        .mobile-nav-link:hover { color: var(--color-highlight); }
+        
+        /* SHIMMER/CARD STYLING */
+        .shimmer-border { position: relative; overflow: hidden; }
+        .card-inner { @apply bg-dark-card h-full w-full p-6 lg:p-8 rounded-sm; }
+    </style>
+</head>
+<body class="bg-dark-primary antialiased">
+
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay">
+        <button id="close-menu" class="absolute top-6 right-6 text-highlight text-5xl font-light hover:text-white transition duration-300">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <nav class="flex flex-col items-center space-y-6">
+            <a href="index.html#about-faq" class="mobile-nav-link">SOBRE NÓS</a>
+            <a href="index.html#inventory" class="mobile-nav-link">CATÁLOGO</a>
+            <a href="index.html#contact" class="mobile-nav-link">CONTACTO</a>
+        </nav>
+    </div>
+
+    <header class="fixed top-0 left-0 w-full z-50 bg-dark-primary/95 backdrop-blur-md border-b border-highlight/30 shadow-2xl">
+        <nav class="max-w-8xl mx-auto flex justify-between items-center py-5 px-6 lg:px-12">
+            
+            <a href="index.html" class="header-logo-text text-3xl font-extrabold tracking-widest">
+                WF
+                <span class="header-logo-subtext text-sm font-light block -mt-1 tracking-[.3em]">CARS</span>
+            </a>
+            
+            <div class="hidden lg:flex items-center space-x-10">
+                <a href="index.html#about-faq" class="nav-link-refined">SOBRE NÓS</a> 
+                <a href="index.html#inventory" class="nav-link-refined">CATÁLOGO</a>
+                
+                <a 
+                    href="index.html#contact" 
+                    class="contact-button-top"
+                >
+                    FALE CONNOSCO
+                </a>
+            </div>
+            
+            <button id="open-menu" class="lg:hidden text-white text-3xl hover:text-highlight transition duration-300">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="gallery-hero" class="relative pt-20 lg:pt-0">
+            
+            <div id="gallery-container" class="gallery-container w-full h-[85vh] min-h-[700px]">
+                
+                <div id="slide-1" class="gallery-item" style="background-image: url('heroimage.jpeg'); background-size: cover; background-position: center 60%;">
+                </div>
+                
+                <div id="slide-2" class="gallery-item" style="background-image: url('heroimage.jpeg'); background-size: cover; background-position: center 50%;">
+                </div>
+                
+                <div id="slide-3" class="gallery-item" style="background-image: url('heroimage.jpeg'); background-size: cover; background-position: center 40%;">
+                </div>
+                
+            </div>
+            
+            <div class="detail-title-container text-white p-4">
+                <div class="detail-title-content text-center lg:text-left">
+                     <p class="text-xl lg:text-3xl font-extrabold mb-2 uppercase tracking-widest text-highlight">
+                        PORSCHE 911 GT3 (ID: po911-014)
+                     </p>
+                     <h1 class="text-5xl lg:text-8xl font-black uppercase tracking-tight">
+                        CLASSIC EDITION
+                     </h1>
+                     <p class="text-lg lg:text-xl font-light mt-4 max-w-xl mx-auto lg:mx-0">
+                         O pináculo da engenharia de pista. Última unidade disponível na Europa.
+                     </p>
+                </div>
+                 
+                 <div class="detail-price-tag">
+                     € 399.900
+                 </div>
+                 
+                 <button id="prev-slide" class="gallery-nav-button left-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                 </button>
+                 <button id="next-slide" class="gallery-nav-button right-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                 </button>
+            </div>
+        </section>
+
+        <section id="performance" class="py-16 lg:py-24 bg-dark-primary -mt-16 relative z-10">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <div class="bg-dark-card p-8 text-center rounded-lg shadow-xl border-t-4 border-highlight">
+                        <p class="highlight-value">518<span class="highlight-unit"> HP</span></p>
+                        <p class="highlight-label">POTÊNCIA DO MOTOR</p>
+                    </div>
+
+                    <div class="bg-dark-card p-8 text-center rounded-lg shadow-xl border-t-4 border-highlight">
+                        <p class="highlight-value">6.0<span class="highlight-unit"> L+</span></p>
+                        <p class="highlight-label">CAPACIDADE DO MOTOR</p>
+                    </div>
+
+                    <div class="bg-dark-card p-8 text-center rounded-lg shadow-xl border-t-4 border-highlight">
+                        <p class="highlight-value">5<span class="highlight-unit">K mi</span></p>
+                        <p class="highlight-label">QUILOMETRAGEM</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="specs" class="py-20 lg:py-32 bg-dark-card">
+            <div class="max-w-6xl mx-auto px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold mb-12 text-white border-l-4 border-highlight pl-4">
+                    Ficha Técnica
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-highlight">Dados Principais</h3>
+                        <div class="space-y-1">
+                            <div class="spec-item">
+                                <span class="spec-label">Fabricante</span>
+                                <span class="spec-value">Porsche</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Modelo</span>
+                                <span class="spec-value">911</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">ID do Carro</span>
+                                <span class="spec-value">po911-014</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Tipo de Combustível</span>
+                                <span class="spec-value">Gasoline</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Quilometragem</span>
+                                <span class="spec-value">5K mi</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-highlight">Performance e Sistema</h3>
+                         <div class="space-y-1">
+                            <div class="spec-item">
+                                <span class="spec-label">Motor</span>
+                                <span class="spec-value">6.0 L TSI+</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Potência (Cavalos)</span>
+                                <span class="spec-value">518 HP</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Potência (Watts)</span>
+                                <span class="spec-value">386 Watts</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Transmissão</span>
+                                <span class="spec-value">Tiptronic</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Tipo de Tração</span>
+                                <span class="spec-value">Front-wheel drive</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-16 text-center">
+                    <p class="text-subtle text-base">
+                        Para detalhes completos sobre esta unidade, incluindo histórico de manutenção e extras, solicite o dossiê completo.
+                    </p>
+                    <a href="#contact-footer" class="contact-button-top mt-6 inline-block">
+                        SOLICITAR DOSSIÊ
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features-detail" class="py-20 lg:py-32 px-6 lg:px-8 bg-light-accent">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl lg:text-5xl font-extrabold mb-12 text-white text-center">
+                    Detalhes que <span class="text-highlight">Inspiram</span>
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <div class="p-6 bg-dark-card rounded-sm shadow-xl border border-subtle/50 hover:border-highlight transition duration-300">
+                        <img src="https://placehold.co/600x400/1C1C1C/E0E0E0/png?text=Interior+Elegante" alt="Interior Elegante" class="w-full h-auto mb-4 rounded-sm"/>
+                        <h4 class="text-xl font-semibold text-highlight mb-2">Interior Premium</h4>
+                        <p class="text-subtle">Acabamento focado no luxo e conforto com costuras de alta qualidade e detalhes em fibra de carbono.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-dark-card rounded-sm shadow-xl border border-subtle/50 hover:border-highlight transition duration-300">
+                        <img src="https://placehold.co/600x400/1C1C1C/E0E0E0/png?text=Tecnologia+Avancada" alt="Tecnologia Avançada" class="w-full h-auto mb-4 rounded-sm"/>
+                        <h4 class="text-xl font-semibold text-highlight mb-2">Tecnologia Integrada</h4>
+                        <p class="text-subtle">Sistema de navegação avançado e assistência ao condutor para uma experiência de condução segura e intuitiva.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-dark-card rounded-sm shadow-xl border border-subtle/50 hover:border-highlight transition duration-300">
+                        <img src="https://placehold.co/600x400/1C1C1C/E0E0E0/png?text=Design+Aerodinamico" alt="Design Aerodinâmico" class="w-full h-auto mb-4 rounded-sm"/>
+                        <h4 class="text-xl font-semibold text-highlight mb-2">Design Aerodinâmico</h4>
+                        <p class="text-subtle">O design intemporal do 911 complementado por elementos aerodinâmicos que aumentam a *downforce*.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer id="contact-footer" class="py-20 lg:py-24 px-6 lg:px-12 bg-dark-card border-t-8 border-highlight/50">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-16 text-left">
+
+            <div>
+                <h4 class="text-xl font-bold mb-6 text-highlight uppercase tracking-wider">Localização Principal</h4>
+                <address class="not-italic space-y-2 text-subtle text-lg">
+                    <p>Portugal —</p>
+                    <p>Av. da República 1056, Escritório 401,</p>
+                    <p>Vila Nova de Gaia, 4400-297</p>
+                </address>
+            </div>
+
+            <div>
+                <h4 class="text-xl font-bold mb-6 text-highlight uppercase tracking-wider">Fale Connosco</h4>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="index.html#contact" class="text-white font-medium hover:text-highlight transition duration-300 border-b border-subtle/50 hover:border-highlight pb-1">
+                            info@wfcars.pt
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tel:+351221234567" class="text-white font-medium text-lg hover:text-highlight transition duration-300">
+                            +351 22 123 4567
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-xl font-bold mb-6 text-highlight uppercase tracking-wider">Redes Sociais</h4>
+                <ul class="space-y-2 text-subtle text-lg">
+                    <li><a href="#" class="hover:text-white transition duration-300">Instagram (WF_CARS)</a></li>
+                    <li><a href="#" class="hover:text-white transition duration-300">LinkedIn</a></li>
+                    <li><a href="#" class="hover:text-white transition duration-300">YouTube</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-xl font-bold mb-6 text-highlight uppercase tracking-wider">Newsletter Exclusiva</h4>
+                <form class="space-y-4">
+                    <div class="flex border-b-2 border-highlight/50 focus-within:border-highlight transition duration-300">
+                        <input 
+                            type="email" 
+                            placeholder="Introduza o seu email" 
+                            class="w-full bg-transparent text-white p-2 placeholder-subtle outline-none"
+                        />
+                        <button type="submit" class="text-highlight p-2 hover:text-white transition duration-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <label class="flex items-start text-sm text-subtle cursor-pointer">
+                        <input type="checkbox" required class="mt-1 mr-3 h-4 w-4 text-highlight bg-dark-primary border-highlight/50 rounded focus:ring-highlight checked:bg-highlight checked:border-transparent transition duration-300" />
+                        <span>Concordo com a <a href="#" class="text-white hover:text-highlight border-b border-white/50 hover:border-highlight transition duration-300">Política de Privacidade</a>.</span>
+                    </label>
+                </form>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto mt-16 pt-8 border-t border-subtle/30 text-center text-subtle text-base">
+            <p>&copy; 2025 WF CARS. Todos os direitos reservados. Design Exclusivo.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Lógica do Slider de Imagens
+        const gallery = document.getElementById('gallery-container');
+        const prevButton = document.getElementById('prev-slide');
+        const nextButton = document.getElementById('next-slide');
+        const slides = document.querySelectorAll('.gallery-item');
+        
+        let currentSlide = 0;
+        let slideWidth = 0; 
+        
+        function updateSlideWidth() {
+            // Recalcula a largura do contêiner da galeria
+            slideWidth = gallery.offsetWidth; 
+        }
+
+        function goToSlide(index) {
+            if (index < 0) {
+                index = slides.length - 1; 
+            } else if (index >= slides.length) {
+                index = 0; 
+            }
+            currentSlide = index;
+            gallery.scrollTo({
+                left: currentSlide * slideWidth,
+                behavior: 'smooth'
+            });
+        }
+
+        // --- INICIALIZAÇÃO E LISTENERS ---
+        
+        // Inicializa o slider APÓS a página estar totalmente carregada
+        window.onload = function() {
+            updateSlideWidth();
+            goToSlide(0);
+        };
+        
+        // Listener para navegação
+        nextButton.addEventListener('click', () => {
+            goToSlide(currentSlide + 1);
+        });
+
+        prevButton.addEventListener('click', () => {
+            goToSlide(currentSlide - 1);
+        });
+
+        // Garantir que a largura do slide é reajustada em redimensionamento
+        window.addEventListener('resize', () => {
+            updateSlideWidth(); 
+            // Força o scroll para o slide atual com a nova largura
+            gallery.scrollTo({
+                left: currentSlide * slideWidth,
+                behavior: 'auto'
+            });
+        });
+
+        // Lógica do Menu Hambúrguer (para esta página)
+        document.getElementById('open-menu').addEventListener('click', () => {
+            document.getElementById('mobile-menu-overlay').classList.add('open');
+            document.body.style.overflow = 'hidden'; 
+        });
+
+        document.getElementById('close-menu').addEventListener('click', () => {
+            document.getElementById('mobile-menu-overlay').classList.remove('open');
+            document.body.style.overflow = '';
+        });
+
+        document.querySelectorAll('#mobile-menu-overlay a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                document.getElementById('mobile-menu-overlay').classList.remove('open');
+                document.body.style.overflow = '';
+            });
+        });
+    </script>
+</body>
+</html>
