@@ -5,10 +5,12 @@
  */
 
 session_start(); 
-include 'db_connect.php'; // Inclui a ligação à DB
+include 'db_connect.php'; 
 
-
-
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header("Location: login.php");
+    exit();
+}
 // Configurações de Upload
 $upload_dir = 'uploads/car_photos/'; // Caminho de uploads. Deve estar na raiz, não dentro de /app/ para ser mais limpo.
 $max_files = 8;
@@ -18,11 +20,16 @@ $max_size = 5 * 1024 * 1024; // 5 MB por foto
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // --- 1. Recolha e Validação de Campos de Texto ---
-    $titulo = trim($conn->real_escape_string($_POST['modelo'])); // Campo 'modelo' é usado como 'titulo'
+    $titulo = trim($conn->real_escape_string($_POST['modelo'])); 
     $marca = trim($conn->real_escape_string($_POST['marca']));
     $descricao = trim($conn->real_escape_string($_POST['descricao']));
     $transmissao = trim($conn->real_escape_string($_POST['transmissao']));
     
+    // Novos campos
+    $cilindrada = filter_input(INPUT_POST, 'cilindrada', FILTER_VALIDATE_INT);
+    $combustivel = trim($conn->real_escape_string($_POST['combustivel']));
+    $raw_extras = trim($conn->real_escape_string($_POST['raw_extras']));
+
     // Filtros de segurança para números
     $ano = filter_input(INPUT_POST, 'ano', FILTER_VALIDATE_INT);
     $preco = filter_input(INPUT_POST, 'preco', FILTER_VALIDATE_FLOAT);
@@ -30,9 +37,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hp = filter_input(INPUT_POST, 'hp', FILTER_VALIDATE_INT);
 
     // Validação de campos obrigatórios
-    if (empty($titulo) || empty($marca) || $ano === false || $preco === false || $km === false || $hp === false || !in_array($transmissao, ['Automática', 'Manual'])) 
+    if (empty($titulo) || empty($marca) || $ano === false || $preco === false || $km === false || $hp === false || $cilindrada === false || empty($combustivel) || !in_array($transmissao, ['Automática', 'Manual'])) 
     {
-        $error = urlencode("Erro: Por favor, preencha todos os campos obrigatórios corretamente.");
+        $error = urlencode("Erro: Por favor, preencha todos os campos obrigatórios corretamente, incluindo Cilindrada e Combustível.");
         header("Location: admin-new-listing.php?status=error&message={$error}");
         exit();
     }
@@ -40,12 +47,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- 2. Inserção do Anúncio Principal (Inicia Transação) ---
     $conn->begin_transaction();
     
+    // QUERY ATUALIZADA para incluir cilindrada_cc, tipo_combustivel, raw_extras
     $sql = "INSERT INTO anuncios (
-                titulo, marca, modelo_ano, descricao, preco, quilometragem, potencia_hp, transmissao
+                titulo, marca, modelo_ano, cilindrada_cc, tipo_combustivel, raw_extras, descricao, preco, quilometragem, potencia_hp, transmissao
             ) VALUES (
                 '$titulo', 
                 '$marca', 
                 $ano, 
+                $cilindrada,
+                '$combustivel',
+                '$raw_extras',
                 '$descricao', 
                 $preco, 
                 $km, 
@@ -72,7 +83,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             // Criar o diretório se não existir (O diretório 'uploads' deve estar na raiz do projeto)
             if (!is_dir($upload_dir)) {
-                // Tentativa de criar o diretório
                 if (!mkdir($upload_dir, 0755, true)) {
                     $error = urlencode("Erro fatal: O diretório de upload '{$upload_dir}' não existe e não pôde ser criado. Verifique permissões.");
                     $conn->rollback();
@@ -82,29 +92,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             for ($i = 0; $i < $file_count; $i++) {
-                // Se não houve ficheiro ou houve erro, ignora a iteração
-                if ($_FILES['car_images']['error'][$i] !== UPLOAD_ERR_OK) {
-                    continue; 
-                }
+                if ($_FILES['car_images']['error'][$i] !== UPLOAD_ERR_OK) { continue; }
 
                 $file_tmp = $_FILES['car_images']['tmp_name'][$i];
                 $file_type = $_FILES['car_images']['type'][$i];
                 $file_size = $_FILES['car_images']['size'][$i];
                 $file_ext = strtolower(pathinfo($_FILES['car_images']['name'][$i], PATHINFO_EXTENSION));
 
-                // Validação de Tipo e Tamanho
                 if (!in_array($file_type, $allowed_types) || $file_size > $max_size) {
                     $all_uploads_success = false;
                     break; 
                 }
 
-                // Gera nome único e seguro
                 $file_name = uniqid('car_', true) . '.' . $file_ext;
                 $file_path = $upload_dir . $file_name;
 
-                // Move o ficheiro
                 if (move_uploaded_file($file_tmp, __DIR__ . '/../' . $file_path)) {
-                    // O caminho guardado na DB é o caminho relativo para ser acessível pelo frontend
                     $uploaded_paths[] = $file_path;
                 } else {
                     $all_uploads_success = false;
@@ -131,11 +134,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($all_uploads_success) {
             $conn->commit();
             $message = urlencode("Anúncio '{$titulo}' publicado com sucesso! Fotos carregadas: " . count($uploaded_paths));
-            // Redireciona para a lista de anúncios ativos
             header("Location: admin-active-listings.php?status=success&message={$message}"); 
         } else {
             $conn->rollback();
-            // Limpa os ficheiros que foram movidos antes de falhar
             foreach ($uploaded_paths as $path) {
                 if (file_exists(__DIR__ . '/../' . $path)) {
                     unlink(__DIR__ . '/../' . $path);
@@ -155,7 +156,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $conn->close();
     exit(); 
 } else {
-    // Acesso direto, redireciona
     header("Location: admin-new-listing.php");
     exit();
 }

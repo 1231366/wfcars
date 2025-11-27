@@ -216,15 +216,25 @@ if ($faturacao_total < 1000) {
                     <img src="logo.png" alt="WF Cars" class="sidebar-logo mb-3" />
                 </div>
                 <div class="list-group list-group-flush mx-3">
-                    <a href="admin-dashboard.php" class="list-group-item list-group-item-action ripple active">
+                    <a href="admin-dashboard.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-dashboard.php') ? 'active' : ''; ?>">
                         <i class="fas fa-chart-line fa-fw"></i><span>Dashboard</span>
                     </a>
-                    <a href="admin-active-listings.php" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-active-listings.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-active-listings.php') ? 'active' : ''; ?>">
                         <i class="fas fa-car fa-fw"></i><span>Anúncios Ativos</span>
                     </a>
-                    <a href="admin-new-listing.php" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-new-listing.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-new-listing.php') ? 'active' : ''; ?>">
                         <i class="fas fa-plus fa-fw"></i><span>Novo Anúncio</span>
                     </a>
+                    
+                    <?php 
+                    // Verifica a sessão para exibir link de Gestão de Utilizadores
+                    if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): 
+                    ?>
+                    <div class="sidebar-divider"></div>
+                    <a href="admin-users.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-users.php' || basename($_SERVER['PHP_SELF']) == 'admin-create-user.php') ? 'active' : ''; ?>">
+                        <i class="fas fa-users-cog fa-fw"></i><span class="text-highlight">Gerir Utilizadores</span>
+                    </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -236,7 +246,6 @@ if ($faturacao_total < 1000) {
             </div>
         </div>
     </nav>
-
     <main>
         
         <h1 class="admin-title-desktop mb-5">
@@ -310,27 +319,30 @@ if ($faturacao_total < 1000) {
     </main>
     
     <nav class="mobile-nav-app d-lg-none">
-        <a href="admin-dashboard.php" class="mobile-nav-item active">
+        <a href="admin-dashboard.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-dashboard.php') ? 'active' : ''; ?>">
             <i class="fas fa-chart-line"></i>
             <div>Dash</div>
         </a>
-        <a href="admin-active-listings.php" class="mobile-nav-item">
+        <a href="admin-active-listings.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-active-listings.php') ? 'active' : ''; ?>">
             <i class="fas fa-car"></i>
             <div>Anúncios</div>
         </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-search-dollar"></i>
-            <div>Vendas</div>
-        </a>
-        <a href="admin-new-listing.php" class="mobile-nav-item">
+        <a href="admin-new-listing.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-new-listing.php') ? 'active' : ''; ?>">
             <i class="fas fa-plus-circle"></i>
             <div>Novo</div>
         </a>
+        
+        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+        <a href="admin-users.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-users.php' || basename($_SERVER['PHP_SELF']) == 'admin-create-user.php') ? 'active' : ''; ?>">
+            <i class="fas fa-users-cog"></i>
+            <div>Users</div>
+        </a>
+        <?php endif; ?>
+        
         <a href="logout.php" class="mobile-nav-item">
             <i class="fas fa-sign-out-alt"></i>
             <div>Sair</div>
         </a>
     </nav>
-    
-</body>
+    </body>
 </html>

@@ -1,10 +1,12 @@
 <?php
 // === BLOC DA SESSÃO E SEGURANÇA ===
 session_start();
-include 'db_connect.php';
+include 'db_connect.php'; 
 
-
-
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header("Location: login.php");
+    exit();
+}
 // Função para mostrar mensagens de status (sucesso/erro)
 function display_status_message() {
     if (isset($_GET['status']) && isset($_GET['message'])) {
@@ -351,7 +353,7 @@ function display_status_message() {
                     
                     <div class="form-outline mb-4">
                          <textarea id="descricao" name="descricao" rows="4" class="form-control" placeholder="Diga aos compradores mais sobre o carro (história, extras, etc)."></textarea>
-                        <label class="form-label" for="descricao">Descrição Completa</label>
+                        <label class="form-label" for="descricao">Descrição (Vantagens/Histórico)</label>
                     </div>
                 </div>
             </div>
@@ -381,18 +383,37 @@ function display_status_message() {
                             </div>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-outline">
                                 <input type="number" id="km" name="km" class="form-control" placeholder="KM" required />
                                 <label class="form-label" for="km">Quilometragem (KM)</label>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        
+                        <div class="col-md-3">
                              <div class="form-outline">
-                                <input type="number" id="hp" name="hp" class="form-control" placeholder="HP" required />
-                                <label class="form-label" for="hp">Potência (HP)</label>
+                                <input type="number" id="hp" name="hp" class="form-control" placeholder="CV (Ex: 190)" required />
+                                <label class="form-label" for="hp">Potência (CV)</label>
                             </div>
                         </div>
+                        
+                        <div class="col-md-3">
+                             <div class="form-outline">
+                                <input type="number" id="cilindrada" name="cilindrada" class="form-control" placeholder="CC (Ex: 1995)" required />
+                                <label class="form-label" for="cilindrada">Cilindrada (CC)</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <select id="combustivel" name="combustivel" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
+                                <option value="Diesel">Diesel</option>
+                                <option value="Gasolina">Gasolina</option>
+                                <option value="Híbrido">Híbrido</option>
+                                <option value="Elétrico">Elétrico</option>
+                            </select>
+                            <label class="form-label select-label text-highlight">Combustível</label>
+                        </div>
+
                         <div class="col-md-4">
                             <select id="transmissao" name="transmissao" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
                                 <option value="Automática">Automática</option>
@@ -400,6 +421,18 @@ function display_status_message() {
                             </select>
                             <label class="form-label select-label text-highlight">Transmissão</label>
                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card bg-highlight-card shadow-lg mb-4">
+                <div class="card-header bg-transparent border-bottom border-secondary-subtle">
+                    <h5 class="text-white mb-0">Lista de Extras (Linha por Linha)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-outline mb-4">
+                        <textarea id="raw_extras" name="raw_extras" rows="8" class="form-control" placeholder="Ex:&#10;Volante aquecido&#10;Teto panorâmico&#10;Sensores estacionamento (frente e trás)&#10;GPS profissional&#10;Aviso de ângulo morto"></textarea>
+                        <label class="form-label" for="raw_extras">Extras (Lista Bruta)</label>
                     </div>
                 </div>
             </div>
@@ -439,20 +472,14 @@ function display_status_message() {
         const previewContainer = document.getElementById('preview-container');
         const maxFiles = 8;
         
-        let dragSrcEl = null; // Elemento que está a ser arrastado
+        let dragSrcEl = null; 
 
-        /**
-         * FUNÇÕES DE MANIPULAÇÃO DE FICHEIROS
-         */
-        
-        // Função principal para renderizar as miniaturas
         function renderPreviews() {
             previewContainer.innerHTML = '';
             
             const files = imageUpload.files;
             
             if (files.length > maxFiles) {
-                // Se houver mais do que 8, apenas as primeiras 8 serão processadas para evitar erros
                 alert('Atenção: Apenas as primeiras ' + maxFiles + ' fotos serão carregadas no servidor. Para remover, clique no X.');
             }
 
@@ -466,9 +493,9 @@ function display_status_message() {
                         const imgUrl = e.target.result;
                         const colDiv = document.createElement('div');
                         colDiv.classList.add('col-6', 'col-md-3', 'col-lg-2');
-                        colDiv.setAttribute('draggable', 'true'); // Torna o elemento arrastável
-                        colDiv.setAttribute('data-index', i); // Guarda o índice original
-                        colDiv.setAttribute('data-file-name', file.name); // Identificador do ficheiro
+                        colDiv.setAttribute('draggable', 'true'); 
+                        colDiv.setAttribute('data-index', i); 
+                        colDiv.setAttribute('data-file-name', file.name); 
                         
                         colDiv.innerHTML = `
                             <div class="preview-item">
@@ -481,7 +508,6 @@ function display_status_message() {
                         
                         previewContainer.appendChild(colDiv);
 
-                        // Adiciona listeners para Drag & Drop e Remoção
                         colDiv.addEventListener('dragstart', handleDragStart);
                         colDiv.addEventListener('dragover', handleDragOver);
                         colDiv.addEventListener('dragleave', handleDragLeave);
@@ -498,7 +524,6 @@ function display_status_message() {
             }
         }
 
-        // Remove um ficheiro da FileList e re-renderiza
         function handleRemoveFile(fileNameToRemove) {
             const newFiles = new DataTransfer();
             
@@ -513,17 +538,14 @@ function display_status_message() {
             renderPreviews();
         }
         
-        // Reordena a FileList com base na nova ordem dos elementos DOM
         function reorderFiles() {
             const currentFiles = Array.from(imageUpload.files);
             const orderedFileNames = [];
             
-            // 1. Obter a ordem atual dos nomes dos ficheiros no DOM
             document.querySelectorAll('#preview-container > div').forEach(colDiv => {
                 orderedFileNames.push(colDiv.getAttribute('data-file-name'));
             });
             
-            // 2. Criar uma nova lista de ficheiros ordenados
             const reorderedFiles = [];
             orderedFileNames.forEach(fileName => {
                 const file = currentFiles.find(f => f.name === fileName);
@@ -532,34 +554,24 @@ function display_status_message() {
                 }
             });
             
-            // 3. Atribuir a nova lista ordenada ao input
             const newFiles = new DataTransfer();
             reorderedFiles.forEach(file => newFiles.items.add(file));
             imageUpload.files = newFiles.files;
-            
-            // Nota: Não é necessário chamar renderPreviews aqui, pois o drag & drop visual já foi feito.
-            // Apenas a lista de ficheiros interna foi sincronizada.
         }
-
-        /**
-         * FUNÇÕES DRAG AND DROP
-         */
 
         function handleDragStart(e) {
             this.style.opacity = '0.5';
             this.classList.add('dragging');
             dragSrcEl = this;
             
-            // Guardar o nome do ficheiro (ou índice) para a transferência de dados
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', this.getAttribute('data-file-name'));
         }
 
         function handleDragOver(e) {
-            e.preventDefault(); // Permite o drop
+            e.preventDefault(); 
             e.dataTransfer.dropEffect = 'move';
             
-            // Adicionar feedback visual à zona de drop
             if (this !== dragSrcEl && this.tagName === 'DIV') {
                 this.classList.add('drag-over');
             }
@@ -575,19 +587,16 @@ function display_status_message() {
             
             this.classList.remove('drag-over');
 
-            // Se o drop não for no próprio elemento arrastado
             if (dragSrcEl !== this) {
                 const container = previewContainer;
                 const dropTarget = this;
                 
-                // Mover visualmente o elemento no DOM
                 const referenceNode = Array.from(container.children).indexOf(dragSrcEl) < Array.from(container.children).indexOf(dropTarget)
                     ? dropTarget.nextElementSibling
                     : dropTarget;
                 
                 container.insertBefore(dragSrcEl, referenceNode);
                 
-                // Sincronizar a lista de ficheiros com a nova ordem DOM
                 reorderFiles();
             }
         }
@@ -596,14 +605,11 @@ function display_status_message() {
             this.style.opacity = '1';
             this.classList.remove('dragging');
             
-            // Limpar a classe drag-over de todos os elementos
             document.querySelectorAll('#preview-container > div').forEach(colDiv => {
                 colDiv.classList.remove('drag-over');
             });
         }
         
-
-        // Listener principal para detetar novas seleções de ficheiros
         imageUpload.addEventListener('change', renderPreviews);
     </script>
 </body>

@@ -6,7 +6,10 @@ session_start();
 include 'db_connect.php'; 
 
 
-
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header("Location: login.php");
+    exit();
+}
 // Configurações de Upload (reutilizadas)
 $upload_dir = 'uploads/car_photos/'; 
 $max_files = 8;
@@ -21,25 +24,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $marca = trim($conn->real_escape_string($_POST['marca']));
     $descricao = trim($conn->real_escape_string($_POST['descricao']));
     $transmissao = trim($conn->real_escape_string($_POST['transmissao']));
+    
+    // NOVOS CAMPOS
+    $cilindrada = filter_input(INPUT_POST, 'cilindrada', FILTER_VALIDATE_INT);
+    $combustivel = trim($conn->real_escape_string($_POST['combustivel']));
+    $raw_extras = trim($conn->real_escape_string($_POST['raw_extras']));
+
+    // Filtros de segurança para números
     $ano = filter_input(INPUT_POST, 'ano', FILTER_VALIDATE_INT);
     $preco = filter_input(INPUT_POST, 'preco', FILTER_VALIDATE_FLOAT);
     $km = filter_input(INPUT_POST, 'km', FILTER_VALIDATE_INT);
     $hp = filter_input(INPUT_POST, 'hp', FILTER_VALIDATE_INT);
 
-    if (empty($anuncio_id) || empty($titulo) || empty($marca) || $ano === false || $preco === false || $km === false || $hp === false) 
+
+    if (empty($anuncio_id) || empty($titulo) || empty($marca) || $ano === false || $preco === false || $km === false || $hp === false || $cilindrada === false || empty($combustivel)) 
     {
-        $error = urlencode("Erro: Dados de anúncio ou ID inválidos. Por favor, preencha todos os campos.");
-        header("Location: admin-active-listings.php?status=error&message={$error}");
+        $error = urlencode("Erro: Dados de anúncio ou ID inválidos. Por favor, preencha todos os campos obrigatórios.");
+        header("Location: admin-edit-listing.php?id={$anuncio_id}&status=error&message={$error}");
         exit();
     }
             
-    // --- 2. Inicia Transação e Faz o UPDATE ---
+    // --- 2. Inicia Transação e Faz o UPDATE (Inclui os novos campos) ---
     $conn->begin_transaction();
     
     $sql_update = "UPDATE anuncios SET
                     titulo = ?, 
                     marca = ?, 
                     modelo_ano = ?, 
+                    cilindrada_cc = ?,
+                    tipo_combustivel = ?,
+                    raw_extras = ?,
                     descricao = ?, 
                     preco = ?, 
                     quilometragem = ?, 
@@ -48,8 +62,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 WHERE id = ?";
     
     $stmt = $conn->prepare($sql_update);
-    $stmt->bind_param("ssisiiisi", 
-        $titulo, $marca, $ano, $descricao, $preco, $km, $hp, $transmissao, $anuncio_id
+    
+    // Tipos: s (string), i (integer), f (float). Total de 11 parâmetros + ID (12)
+    $stmt->bind_param("siiissiisii", 
+        $titulo, $marca, $ano, $cilindrada, $combustivel, $raw_extras, $descricao, $preco, $km, $hp, $transmissao, $anuncio_id
     );
             
     if ($stmt->execute()) {
@@ -57,13 +73,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $all_uploads_success = true;
         $uploaded_paths = [];
 
-        // --- 3. Processamento de Novas Imagens (Substituição Total) ---
+        // --- 3. Processamento de Novas Imagens (Lógica de Substituição Total) ---
         if (isset($_FILES['car_images']) && !empty($_FILES['car_images']['name'][0])) {
-            // Se houver novas fotos, faz a substituição completa:
-
+            
             // 3.1 Apagar todas as fotos antigas (do disco e da DB)
             try {
-                // a) Apagar do disco
                 $result_old_photos = $conn->query("SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = {$anuncio_id}");
                 while ($row = $result_old_photos->fetch_assoc()) {
                     $full_path = __DIR__ . '/../' . $row['caminho_foto'];
@@ -71,17 +85,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         unlink($full_path);
                     }
                 }
-                
-                // b) Apagar da DB (simples DELETE, se não houver CASCADE definido)
                 $conn->query("DELETE FROM fotos_anuncio WHERE anuncio_id = {$anuncio_id}");
                 
-                // 3.2 Fazer o upload das novas fotos (reutilizando a lógica de criação)
+                // 3.2 Fazer o upload das novas fotos
                 $file_count = count($_FILES['car_images']['name']);
                 $full_upload_dir = __DIR__ . '/../' . $upload_dir;
 
-                if (!is_dir($full_upload_dir)) {
-                    mkdir($full_upload_dir, 0755, true);
-                }
+                if (!is_dir($full_upload_dir)) { mkdir($full_upload_dir, 0755, true); }
 
                 for ($i = 0; $i < $file_count; $i++) {
                     if ($_FILES['car_images']['error'][$i] !== UPLOAD_ERR_OK) { continue; }
@@ -123,7 +133,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $all_uploads_success = false;
             }
         } else {
-             // Nenhuma nova foto, mantemos as fotos existentes 
              $all_uploads_success = true;
         }
 
@@ -135,14 +144,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $conn->rollback();
             $error = urlencode("Erro ao atualizar fotos. As informações do carro foram salvas, mas as fotos não foram substituídas. (Verifique permissões)");
-            header("Location: admin-active-listings.php?list=Ativo&status=error&message={$error}");
+            header("Location: admin-edit-listing.php?id={$anuncio_id}&status=error&message={$error}");
         }
 
     } else {
         // Erro na execução do UPDATE
         $conn->rollback();
         $error = urlencode("Erro ao atualizar anúncio (DB): " . $conn->error);
-        header("Location: admin-active-listings.php?list=Ativo&status=error&message={$error}");
+        header("Location: admin-edit-listing.php?id={$anuncio_id}&status=error&message={$error}");
     }
     
     $conn->close();
