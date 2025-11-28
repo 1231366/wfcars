@@ -56,8 +56,8 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.umd.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     
@@ -95,10 +95,14 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
              border-color: rgb(var(--mdb-secondary-rgb)) !important;
              box-shadow: 0 0 0 0.25rem rgba(192, 192, 192, 0.25) !important;
         }
-        .form-label {
+        /* Cor de texto para os labels fixos */
+        .input-label-fixed {
             color: rgb(var(--mdb-secondary-rgb)) !important;
             font-weight: 500;
+            margin-bottom: 5px; /* Espaçamento entre o label e o input */
+            display: block; /* Garante que o label ocupe toda a largura */
         }
+        
         .form-select {
              background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23C0C0C0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
         }
@@ -377,14 +381,14 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                     <h5 class="text-white mb-0">Detalhes da Viatura</h5>
                 </div>
                 <div class="card-body">
-                    <div class="form-outline mb-4">
+                    <div class="mb-4">
+                        <label class="input-label-fixed" for="modelo">Título do Anúncio / Modelo</label>
                         <input type="text" id="modelo" name="modelo" class="form-control" value="<?php echo htmlspecialchars($anuncio['titulo']); ?>" required />
-                        <label class="form-label" for="modelo">Título do Anúncio / Modelo</label>
                     </div>
                     
-                    <div class="form-outline mb-4">
+                    <div class="mb-4">
+                        <label class="input-label-fixed" for="descricao">Descrição (Vantagens/Histórico)</label>
                          <textarea id="descricao" name="descricao" rows="4" class="form-control"><?php echo htmlspecialchars($anuncio['descricao'] ?? ''); ?></textarea>
-                        <label class="form-label" for="descricao">Descrição (Vantagens/Histórico)</label>
                     </div>
                 </div>
             </div>
@@ -396,59 +400,63 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="form-outline">
+                            <div class="mb-4">
+                                <label class="input-label-fixed" for="marca">Marca</label>
                                 <input type="text" id="marca" name="marca" class="form-control" value="<?php echo htmlspecialchars($anuncio['marca']); ?>" required />
-                                <label class="form-label" for="marca">Marca</label>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="form-outline">
+                            <div class="mb-4">
+                                <label class="input-label-fixed" for="ano">Ano</label>
                                 <input type="number" id="ano" name="ano" class="form-control" value="<?php echo htmlspecialchars($anuncio['modelo_ano']); ?>" required />
-                                <label class="form-label" for="ano">Ano</label>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="form-outline">
+                            <div class="mb-4">
+                                <label class="input-label-fixed" for="preco">Preço Final (€)</label>
                                 <input type="number" step="0.01" id="preco" name="preco" class="form-control" value="<?php echo htmlspecialchars(number_format((float)$anuncio['preco'], 2, '.', '')); ?>" required />
-                                <label class="form-label" for="preco">Preço Final (€)</label>
                             </div>
                         </div>
                         
                         <div class="col-md-3">
-                            <div class="form-outline">
+                            <div class="mb-4">
+                                <label class="input-label-fixed" for="km">Quilometragem (KM)</label>
                                 <input type="number" id="km" name="km" class="form-control" value="<?php echo htmlspecialchars($anuncio['quilometragem']); ?>" required />
-                                <label class="form-label" for="km">Quilometragem (KM)</label>
                             </div>
                         </div>
                         <div class="col-md-3">
-                             <div class="form-outline">
+                             <div class="mb-4">
+                                 <label class="input-label-fixed" for="hp">Potência (CV)</label>
                                 <input type="number" id="hp" name="hp" class="form-control" value="<?php echo htmlspecialchars($anuncio['potencia_hp']); ?>" required />
-                                <label class="form-label" for="hp">Potência (CV)</label>
                             </div>
                         </div>
                         
                         <div class="col-md-3">
-                             <div class="form-outline">
+                             <div class="mb-4">
+                                <label class="input-label-fixed" for="cilindrada">Cilindrada (CC)</label>
                                 <input type="number" id="cilindrada" name="cilindrada" class="form-control" value="<?php echo htmlspecialchars($anuncio['cilindrada_cc'] ?? ''); ?>" required />
-                                <label class="form-label" for="cilindrada">Cilindrada (CC)</label>
                             </div>
                         </div>
                         
                         <div class="col-md-3">
-                            <select id="combustivel" name="combustivel" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
-                                <option value="Diesel" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Diesel' ? 'selected' : ''; ?>>Diesel</option>
-                                <option value="Gasolina" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Gasolina' ? 'selected' : ''; ?>>Gasolina</option>
-                                <option value="Híbrido" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Híbrido' ? 'selected' : ''; ?>>Híbrido</option>
-                                <option value="Elétrico" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Elétrico' ? 'selected' : ''; ?>>Elétrico</option>
-                            </select>
-                            <label class="form-label select-label text-highlight">Combustível</label>
+                             <div class="mb-4">
+                                <label class="input-label-fixed text-highlight" for="combustivel">Combustível</label>
+                                <select id="combustivel" name="combustivel" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
+                                    <option value="Diesel" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Diesel' ? 'selected' : ''; ?>>Diesel</option>
+                                    <option value="Gasolina" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Gasolina' ? 'selected' : ''; ?>>Gasolina</option>
+                                    <option value="Híbrido" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Híbrido' ? 'selected' : ''; ?>>Híbrido</option>
+                                    <option value="Elétrico" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Elétrico' ? 'selected' : ''; ?>>Elétrico</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-4">
-                            <select id="transmissao" name="transmissao" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
-                                <option value="Automática" <?php echo ($anuncio['transmissao'] === 'Automática') ? 'selected' : ''; ?>>Automática</option>
-                                <option value="Manual" <?php echo ($anuncio['transmissao'] === 'Manual') ? 'selected' : ''; ?>>Manual</option>
-                            </select>
-                            <label class="form-label select-label text-highlight">Transmissão</label>
+                             <div class="mb-4">
+                                <label class="input-label-fixed text-highlight" for="transmissao">Transmissão</label>
+                                <select id="transmissao" name="transmissao" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
+                                    <option value="Automática" <?php echo ($anuncio['transmissao'] === 'Automática') ? 'selected' : ''; ?>>Automática</option>
+                                    <option value="Manual" <?php echo ($anuncio['transmissao'] === 'Manual') ? 'selected' : ''; ?>>Manual</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -459,9 +467,9 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                     <h5 class="text-white mb-0">Lista de Extras (Linha por Linha)</h5>
                 </div>
                 <div class="card-body">
-                    <div class="form-outline mb-4">
+                    <div class="mb-4">
+                        <label class="input-label-fixed" for="raw_extras">Extras (Lista Bruta)</label>
                          <textarea id="raw_extras" name="raw_extras" rows="8" class="form-control" placeholder="Ex:&#10;Volante aquecido&#10;Teto panorâmico&#10;Sensores estacionamento (frente e trás)&#10;GPS profissional&#10;Aviso de ângulo morto"><?php echo htmlspecialchars($anuncio['raw_extras'] ?? ''); ?></textarea>
-                        <label class="form-label" for="raw_extras">Extras (Lista Bruta)</label>
                     </div>
                 </div>
             </div>
@@ -751,6 +759,10 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                 currentPreviews.push({ path: path, isNew: false, fileName: path }); 
              });
              renderPreviews();
+
+             // A inicialização do MDB (mdb.init()) foi removida
+             // porque removemos os componentes 'form-outline'.
+
         });
         
         // Listener para o submit do formulário para garantir que o input escondido está atualizado

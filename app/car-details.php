@@ -52,6 +52,7 @@ $raw_extras_list = explode("\n", $car['raw_extras'] ?? ''); // Divide a lista de
 // Variáveis simuladas/mantidas para a estrutura (0-100 removido)
 $aceleracao = "-"; 
 $tracao = "Traseira"; 
+$logo_path = 'logo.png'; 
 ?>
 <!DOCTYPE html>
 <html lang="pt-PT" class="scroll-smooth">
@@ -68,6 +69,22 @@ $tracao = "Traseira";
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                'dark-primary': 'var(--color-dark-primary)',
+                'dark-card': 'var(--color-dark-card)',
+                'highlight': 'var(--color-highlight)',
+                'subtle': 'var(--color-subtle)',
+                'light-accent': 'var(--color-light-accent)'
+              },
+            }
+          }
+        }
+    </script>
+    
     <style>
         /* VARIÁVEIS DE COR DA HOMEPAGE */
         :root{
@@ -88,11 +105,67 @@ $tracao = "Traseira";
         /* UTILITY: Botão Silver da Homepage */
         .btn-silver{background:linear-gradient(180deg,var(--color-highlight),#f5f5f5);color:#0b0b0b;font-weight:800}
 
-        /* ESTILOS DE HEADER ESPECÍFICOS */
+        /* ============================================== */
+        /* ESTILOS UNIFICADOS (HEADER & FOOTER) */
+        /* ============================================== */
+
+        /* HEADER */
         header { background-color: var(--color-dark-primary)/80 !important; }
-        .header-logo-img { height: 56px; } /* h-14 */
+        .h-16 { height: 4rem !important; } 
+        .header-logo-img { height: 4rem !important; }
         
+        /* Estilo do Menu PC igual ao Hamburger */
+        .header-nav-link {
+            font-weight: 800; /* Bolder */
+            letter-spacing: 0.05em; /* Tracking wider */
+            text-shadow: 0 0 10px rgba(200, 200, 200, 0.1);
+            transition: color 0.3s;
+            font-size: 1.2rem; /* Tamanho maior para destaque */
+            color: var(--color-subtle) !important; 
+        }
+        .header-nav-link:hover {
+            color: var(--color-highlight) !important;
+        }
+
+        /* Menu Mobile Overlay (copiado da index.php) */
+        .mobile-menu-overlay {
+            transition: transform 0.4s ease-in-out;
+            transform: translateX(100%); 
+            background: var(--color-dark-card); 
+            border-left: 1px solid var(--color-highlight)/20;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            width: 100%;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-menu-overlay.active {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-overlay nav a {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-shadow: 0 0 10px rgba(200, 200, 200, 0.1);
+            transition: color 0.3s;
+        }
+
+        .mobile-menu-overlay nav a:hover {
+            color: var(--color-highlight);
+        }
+        
+        /* FOOTER subtle */
+        footer a{color:var(--color-subtle)}
+        footer a:hover{color:var(--color-highlight)}
+        
+        /* ============================================== */
         /* ESTILOS DE CONTEÚDO DA PÁGINA (Mantidos) */
+        /* ============================================== */
+
         .silver-text { background: linear-gradient(135deg,#d0d0d0,#ffffff,#bfbfbf); -webkit-background-clip: text; color: transparent; }
         .card { background:#111; border:1px solid #ffffff22; box-shadow:0 0 25px #ffffff10; border-radius:1rem; }
         
@@ -128,6 +201,90 @@ $tracao = "Traseira";
             border-color: #C8C8CA;
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
+
+        /* ================================================= */
+        /* == MOBILE OPTIMIZATION (Max 767px) == */
+        /* ================================================= */
+        @media(max-width: 767px) {
+            /* == GERAL == */
+            main { padding-top: 4rem !important; }
+            .py-12 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+            .py-24 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+            .px-10 { padding-left: 1rem !important; padding-right: 1rem !important; }
+            .text-5xl { font-size: 2.25rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            .text-lg { font-size: 0.9rem !important; }
+
+            /* == HEADER == */
+            .header-logo-img { height: 44px; }
+            
+            /* == GALERIA == */
+            #galeria .text-center { margin-bottom: 1rem; margin-top: 0; }
+            #galeria .swiper { margin-bottom: 0.5rem; }
+            .gallerySlider .swiper-slide img { min-height: 300px !important; }
+            
+            .gallerySlider .swiper-button-next,
+            .gallerySlider .swiper-button-prev {
+                width: 36px;
+                height: 36px;
+                font-size: 0.8rem;
+                border: 1px solid rgba(255, 255, 255, 0.4);
+            }
+            .gallerySlider .swiper-button-next::after,
+            .gallerySlider .swiper-button-prev::after {
+                font-size: 0.8rem !important;
+            }
+
+            .galleryThumbs .swiper-slide {
+                height: 70px;
+            }
+            
+            /* == FICHA TÉCNICA (Otimização Máxima) == */
+            #detalhes .grid-cols-1 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.5rem;
+            }
+            #detalhes .mb-12 { margin-bottom: 1rem; }
+            
+            .card.p-8 {
+                padding: 0.75rem !important;
+                border-radius: 0.5rem;
+            }
+            .card p.text-sm {
+                font-size: 0.65rem;
+            }
+            .card h3.text-2xl {
+                font-size: 1rem;
+                margin-top: 0.25rem;
+            }
+            
+            /* == EXTRAS == */
+            #extras .mb-12 { margin-bottom: 1rem; }
+            #extras .card h3.text-xl {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+            }
+            #extras .grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                font-size: 0.75rem;
+                gap-y: 0.5rem;
+            }
+            .fa-check-circle { 
+                 font-size: 0.6rem !important;
+            }
+
+            /* == CONTACTO == */
+            #contacto .mb-10 { margin-bottom: 1rem; }
+            #contacto a.px-10 {
+                padding: 0.75rem 1rem !important;
+                font-size: 0.9rem;
+            }
+            
+            /* FOOTER */
+            footer a {
+                color: var(--color-subtle);
+            }
+        }
     </style>
 </head>
 <body class="antialiased bg-dark-primary text-white">
@@ -135,20 +292,29 @@ $tracao = "Traseira";
 <header class="fixed w-full z-40 top-0 left-0 bg-dark-primary/80 backdrop-blur-md border-b border-highlight/20">
     <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-12 py-4">
       <a href="index.php" class="flex items-center gap-4">
-        <img src="logo.png" alt="WF Cars" class="h-14 header-logo-img" />
-        <span class="hidden lg:inline-block chrome-text font-extrabold tracking-wide">WF CARS</span>
-      </a>
+        <img src="<?php echo $logo_path; ?>" alt="WF Cars" class="h-16 header-logo-img" />
+        </a>
 
       <div class="hidden lg:flex items-center gap-8">
-        <a href="index.php#about-faq" class="uppercase text-sm tracking-wide text-subtle hover:text-highlight transition">SOBRE NÓS</a>
-        <a href="index.php#inventory" class="uppercase text-sm tracking-wide text-subtle hover:text-highlight transition">CATÁLOGO</a>
-        <a href="index.php#services" class="uppercase text-sm tracking-wide text-subtle hover:text-highlight transition">SERVIÇOS</a>
+        <a href="index.php#about-faq" class="header-nav-link text-subtle hover:text-highlight transition">SOBRE NÓS</a>
+        <a href="inventory.php" class="header-nav-link text-subtle hover:text-highlight transition">CATÁLOGO</a> 
         <a href="index.php#contact" class="ml-4 btn-silver px-5 py-2 rounded-md shadow">FALE CONNOSCO</a>
       </div>
 
       <button id="open-menu" class="lg:hidden text-2xl text-subtle"><i class="fa fa-bars"></i></button>
     </nav>
 </header>
+
+<div id="mobile-menu-overlay" class="mobile-menu-overlay fixed inset-0 z-50 hidden">
+    <button id="close-menu" class="absolute top-6 right-6 text-highlight text-3xl z-20 hover:text-white transition">&times;</button>
+    <nav class="flex flex-col items-center gap-10 text-center">
+      <a href="index.php#about-faq" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">SOBRE NÓS</a>
+      <a href="inventory.php" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">CATÁLOGO</a>
+      <a href="index.php#contact" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">CONTACTO</a>
+    </nav>
+    <div class="absolute bottom-10 text-subtle text-sm">WF CARS © 2025</div>
+</div>
+
 <main class="pt-20">
 
 <section id="galeria" class="py-12 px-10 bg-dark-primary max-w-7xl mx-auto">
@@ -213,7 +379,7 @@ $tracao = "Traseira";
         ?>
         
         <?php if (!empty($cleaned_extras)): ?>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6 text-gray-300 text-sm">
+            <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6 text-gray-300 text-sm">
                 <?php foreach ($cleaned_extras as $extra): ?>
                     <?php $display_extra = trim(str_replace(['▪️', '•', '💰', '€', '📱'], '', $extra)); ?>
                     <p class="flex items-start">
@@ -239,20 +405,74 @@ $tracao = "Traseira";
     </a>
 </section>
 
-<footer class="py-10 text-center border-t border-white/10 mt-10">
-    <p class="text-gray-500 text-sm">© 2025 WFCars — Todos os direitos reservados.</p>
+<footer class="py-16 bg-dark-card border-t border-highlight/10 mt-20">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6 lg:px-12">
+      <div>
+        <h4 class="text-sm text-highlight uppercase font-bold mb-3">Localização Principal</h4>
+        <address class="not-italic text-subtle text-sm">
+            EN1, Av São Salvador de Grijó 35<br/>
+            Vila Nova de Gaia, Portugal 4415-557
+        </address>
+      </div>
+
+      <div>
+        <h4 class="text-sm text-highlight uppercase font-bold mb-3">Fale Connosco</h4>
+        <a href="mailto:warriorfcar@gmail.com" class="block text-white mb-1">warriorfcar@gmail.com</a>
+        <a href="tel:+351910291038" class="block text-white">+351 910 291 038 (Chamada)</a>
+      </div>
+
+      <div>
+        <h4 class="text-sm text-highlight uppercase font-bold mb-3">Redes Sociais</h4>
+        <div class="flex gap-4 text-2xl text-subtle items-center">
+            <a href="https://www.instagram.com/wfcars.pt/" target="_blank" title="Instagram" class="hover:text-white transition"><i class="fab fa-instagram"></i></a>
+            <a href="https://wa.me/351910291038" target="_blank" title="WhatsApp" class="hover:text-white transition"><i class="fab fa-whatsapp"></i></a>
+            <a href="https://www.facebook.com/people/WFcars/61551061824401/?ref=_xav_ig_profile_page_web" target="_blank" title="Facebook" class="hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+        </div>
+      </div>
+      
+    </div>
+
+   <div class="max-w-7xl mx-auto text-center mt-12 text-subtle text-sm px-6 lg:px-12">
+        <a href="https://www.livroreclamacoes.pt/" target="_blank" class="inline-block text-white/80 hover:text-highlight transition text-xs border-b border-subtle/50 mb-3">
+            Livro de Reclamações Eletrónico
+        </a>
+        <p class="text-subtle text-sm">&copy; 2025 WF CARS. Todos os direitos reservados.</p>
+    </div>
 </footer>
 
 <script>
+    // Função auxiliar para fechar o menu mobile (Copiada das outras páginas)
+    function closeMobileMenu() {
+        document.getElementById('mobile-menu-overlay').classList.remove('active');
+        // Esconde completamente após a transição (400ms do CSS)
+        setTimeout(() => document.getElementById('mobile-menu-overlay').classList.add('hidden'), 400);
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
+        // Lógica de abertura/fecho do menu mobile (Copiada das outras páginas)
+        const openMenu = document.getElementById('open-menu');
+        const closeMenu = document.getElementById('close-menu');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+
+        if (openMenu && mobileMenuOverlay) {
+            openMenu.addEventListener('click', () => { 
+                mobileMenuOverlay.classList.remove('hidden'); 
+                setTimeout(() => mobileMenuOverlay.classList.add('active'), 10);
+            });
+        }
+        
+        if (closeMenu && mobileMenuOverlay) {
+            closeMenu.addEventListener('click', closeMobileMenu);
+        }
+        
         // 1. Inicializa o Swiper de Thumbnails primeiro
         var galleryThumbs = new Swiper(".galleryThumbs", {
             spaceBetween: 10,
-            slidesPerView: 4,
+            slidesPerView: 5, // Ajustado para 5 slides em mobile
             freeMode: true,
             watchSlidesProgress: true,
             breakpoints: {
-                1024: {
+                768: { // Tablet/Desktop
                     slidesPerView: 6,
                 }
             },
