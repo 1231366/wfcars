@@ -1,7 +1,6 @@
 <?php
 /**
  * PÁGINA DE DETALHES DO CARRO - CARREGA DADOS DINAMICAMENTE
- * NOTA: Corrigido o problema de inicialização do Swiper e simplificado o bloco de Extras.
  */
 include 'db_connect.php'; 
 
@@ -17,7 +16,7 @@ if (!$car_id) {
 $stmt = $conn->prepare("SELECT 
     id, titulo, descricao, modelo_ano, potencia_hp, quilometragem, transmissao,
     cilindrada_cc, tipo_combustivel, raw_extras 
-    FROM anuncios WHERE id = ? AND status = 'Ativo'");
+    FROM anuncios WHERE id = ?"); // Removido "AND status='Ativo'" para permitir ver vendidos se tiver o link
 $stmt->bind_param("i", $car_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -49,9 +48,6 @@ $cilindrada_cc = $car['cilindrada_cc'] . ' cc';
 $combustivel = htmlspecialchars($car['tipo_combustivel']);
 $raw_extras_list = explode("\n", $car['raw_extras'] ?? ''); // Divide a lista de extras em linhas
 
-// Variáveis simuladas/mantidas para a estrutura (0-100 removido)
-$aceleracao = "-"; 
-$tracao = "Traseira"; 
 $logo_path = 'logo.png'; 
 ?>
 <!DOCTYPE html>
@@ -59,10 +55,11 @@ $logo_path = 'logo.png';
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>WFCARS | <?php echo $title; ?> - Detalhes</title>
+    <title>WFCARS | <?php echo $title; ?></title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
@@ -86,7 +83,7 @@ $logo_path = 'logo.png';
     </script>
     
     <style>
-        /* VARIÁVEIS DE COR DA HOMEPAGE */
+        /* VARIÁVEIS DE COR */
         :root{
             --color-dark-primary: #070708;
             --color-dark-card: #0f1114;
@@ -95,81 +92,137 @@ $logo_path = 'logo.png';
             --color-light-accent: #141618;
         }
 
-        /* ESTILOS DE TEMA */
         html,body{height:100%;}
         body{font-family:'Poppins',sans-serif;background:var(--color-dark-primary);color:#EFEFEF;-webkit-font-smoothing:antialiased;}
 
-        /* UTILITY: Efeito Chrome Text da Homepage */
+        /* UTILITY */
         .chrome-text{background:linear-gradient(90deg,#fff,#c8c8c8,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 8px rgba(200,200,200,0.12)}
-        
-        /* UTILITY: Botão Silver da Homepage */
         .btn-silver{background:linear-gradient(180deg,var(--color-highlight),#f5f5f5);color:#0b0b0b;font-weight:800}
-
+        .silver-text { background: linear-gradient(135deg,#d0d0d0,#ffffff,#bfbfbf); -webkit-background-clip: text; color: transparent; }
+        
         /* ============================================== */
-        /* ESTILOS UNIFICADOS (HEADER & FOOTER) */
+        /* ESTILOS UNIFICADOS (HEADER & MENU) */
         /* ============================================== */
 
-        /* HEADER */
-        header { background-color: var(--color-dark-primary)/80 !important; }
+        /* HEADER PC */
         .h-16 { height: 4rem !important; } 
         .header-logo-img { height: 4rem !important; }
         
-        /* Estilo do Menu PC igual ao Hamburger */
         .header-nav-link {
-            font-weight: 800; /* Bolder */
-            letter-spacing: 0.05em; /* Tracking wider */
+            font-weight: 300; 
+            letter-spacing: 0.05em; 
             text-shadow: 0 0 10px rgba(200, 200, 200, 0.1);
             transition: color 0.3s;
-            font-size: 1.2rem; /* Tamanho maior para destaque */
-            color: var(--color-subtle) !important; 
+            font-size: 1.1rem; 
+            font-family: 'Playfair Display', serif; 
+            color: var(--color-subtle) !important;
         }
         .header-nav-link:hover {
             color: var(--color-highlight) !important;
         }
 
-        /* Menu Mobile Overlay (copiado da index.php) */
+        /* MENU MOBILE ESTILO ROLLS ROYCE */
         .mobile-menu-overlay {
-            transition: transform 0.4s ease-in-out;
-            transform: translateX(100%); 
-            background: var(--color-dark-card); 
-            border-left: 1px solid var(--color-highlight)/20;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            width: 100%;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #000000; /* Fundo Preto Puro */
             display: flex; 
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: flex-start; /* Alinhado à esquerda */
+            padding-left: 2.5rem; 
+            
+            /* Transição */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
 
         .mobile-menu-overlay.active {
-            transform: translateX(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-menu-overlay nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
         }
 
         .mobile-menu-overlay nav a {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            text-shadow: 0 0 10px rgba(200, 200, 200, 0.1);
-            transition: color 0.3s;
+            font-family: 'Manrope', sans-serif; 
+            font-size: 1.2rem;
+            font-weight: 400; 
+            letter-spacing: 0.2em; 
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6); 
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(20px);
         }
+
+        .mobile-menu-overlay.active nav a {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Delays para efeito cascata */
+        .mobile-menu-overlay.active nav a:nth-child(1) { transition-delay: 0.1s; }
+        .mobile-menu-overlay.active nav a:nth-child(2) { transition-delay: 0.15s; }
+        .mobile-menu-overlay.active nav a:nth-child(3) { transition-delay: 0.2s; }
+        .mobile-menu-overlay.active nav a:nth-child(4) { transition-delay: 0.25s; }
 
         .mobile-menu-overlay nav a:hover {
-            color: var(--color-highlight);
+            color: #fff;
+            padding-left: 10px; 
+            text-shadow: 0 0 15px rgba(255,255,255,0.4);
+        }
+
+        /* Botão Fechar (Topo Direito) */
+        .rr-close-btn {
+            position: absolute;
+            top: 25px;
+            right: 25px; 
+            left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 60;
+            flex-direction: row-reverse;
+        }
+
+        .rr-close-icon {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s;
         }
         
-        /* FOOTER subtle */
-        footer a{color:var(--color-subtle)}
-        footer a:hover{color:var(--color-highlight)}
+        .rr-close-btn:hover .rr-close-icon {
+            border-color: white;
+        }
         
         /* ============================================== */
-        /* ESTILOS DE CONTEÚDO DA PÁGINA (Mantidos) */
+        /* ESTILOS DE DETALHES DO CARRO */
         /* ============================================== */
 
-        .silver-text { background: linear-gradient(135deg,#d0d0d0,#ffffff,#bfbfbf); -webkit-background-clip: text; color: transparent; }
         .card { background:#111; border:1px solid #ffffff22; box-shadow:0 0 25px #ffffff10; border-radius:1rem; }
         
-        /* Swiper Navigation (Inventário e Galeria) */
+        /* Swiper Navigation */
         .gallerySlider .swiper-button-next,
         .gallerySlider .swiper-button-prev {
             color: var(--color-highlight) !important;
@@ -185,7 +238,7 @@ $logo_path = 'logo.png';
             top: 50% !important;
         }
 
-        /* Thumbnails Styling */
+        /* Thumbnails */
         .galleryThumbs .swiper-slide {
             transition: all 0.3s;
             opacity: 0.5;
@@ -201,13 +254,15 @@ $logo_path = 'logo.png';
             border-color: #C8C8CA;
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
+        
+        /* FOOTER subtle */
+        footer a{color:var(--color-subtle)}
+        footer a:hover{color:var(--color-highlight)}
 
         /* ================================================= */
         /* == MOBILE OPTIMIZATION (Max 767px) == */
         /* ================================================= */
         @media(max-width: 767px) {
-            /* == GERAL == */
-            main { padding-top: 4rem !important; }
             .py-12 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
             .py-24 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
             .px-10 { padding-left: 1rem !important; padding-right: 1rem !important; }
@@ -215,10 +270,11 @@ $logo_path = 'logo.png';
             .text-3xl { font-size: 1.5rem !important; }
             .text-lg { font-size: 0.9rem !important; }
 
-            /* == HEADER == */
-            .header-logo-img { height: 44px; }
+            /* Header Mobile */
+            .h-16 { height: 3.5rem !important; }
+            .header-logo-img { height: 3.5rem !important; }
             
-            /* == GALERIA == */
+            /* Galeria */
             #galeria .text-center { margin-bottom: 1rem; margin-top: 0; }
             #galeria .swiper { margin-bottom: 0.5rem; }
             .gallerySlider .swiper-slide img { min-height: 300px !important; }
@@ -230,16 +286,12 @@ $logo_path = 'logo.png';
                 font-size: 0.8rem;
                 border: 1px solid rgba(255, 255, 255, 0.4);
             }
-            .gallerySlider .swiper-button-next::after,
-            .gallerySlider .swiper-button-prev::after {
-                font-size: 0.8rem !important;
-            }
 
             .galleryThumbs .swiper-slide {
                 height: 70px;
             }
             
-            /* == FICHA TÉCNICA (Otimização Máxima) == */
+            /* Ficha Técnica */
             #detalhes .grid-cols-1 {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: 0.5rem;
@@ -258,7 +310,7 @@ $logo_path = 'logo.png';
                 margin-top: 0.25rem;
             }
             
-            /* == EXTRAS == */
+            /* Extras */
             #extras .mb-12 { margin-bottom: 1rem; }
             #extras .card h3.text-xl {
                 font-size: 1rem;
@@ -273,16 +325,11 @@ $logo_path = 'logo.png';
                  font-size: 0.6rem !important;
             }
 
-            /* == CONTACTO == */
+            /* Contacto */
             #contacto .mb-10 { margin-bottom: 1rem; }
             #contacto a.px-10 {
                 padding: 0.75rem 1rem !important;
                 font-size: 0.9rem;
-            }
-            
-            /* FOOTER */
-            footer a {
-                color: var(--color-subtle);
             }
         }
     </style>
@@ -305,19 +352,25 @@ $logo_path = 'logo.png';
     </nav>
 </header>
 
-<div id="mobile-menu-overlay" class="mobile-menu-overlay fixed inset-0 z-50 hidden">
-    <button id="close-menu" class="absolute top-6 right-6 text-highlight text-3xl z-20 hover:text-white transition">&times;</button>
-    <nav class="flex flex-col items-center gap-10 text-center">
-      <a href="index.php#about-faq" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">SOBRE NÓS</a>
-      <a href="inventory.php" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">CATÁLOGO</a>
-      <a href="index.php#contact" class="text-3xl font-bold text-white" onclick="closeMobileMenu();">CONTACTO</a>
+<div id="mobile-menu-overlay" class="mobile-menu-overlay">
+    <button id="close-menu" class="rr-close-btn">
+        <div class="rr-close-icon"><i class="fas fa-times text-xs"></i></div>
+        CLOSE
+    </button>
+    
+    <nav>
+        <a href="index.php#about-faq" onclick="closeMobileMenu()">SOBRE NÓS</a>
+        <a href="inventory.php" onclick="closeMobileMenu()">VIATURAS EM STOCK</a>
+        <a href="index.php#contact" onclick="closeMobileMenu()">CONTACTO</a>
+        <a href="https://wa.me/351910291038" target="_blank" onclick="closeMobileMenu()">WHATSAPP</a>
     </nav>
-    <div class="absolute bottom-10 text-subtle text-sm">WF CARS © 2025</div>
+    
+    <div class="absolute bottom-10 left-10 text-subtle text-xs tracking-widest font-sans opacity-50">WF CARS © 2025</div>
 </div>
 
-<main class="pt-20">
+<main class="pt-28 lg:pt-20">
 
-<section id="galeria" class="py-12 px-10 bg-dark-primary max-w-7xl mx-auto">
+<section id="galeria" class="px-10 bg-dark-primary max-w-7xl mx-auto">
 
     <div class="text-center mb-10 mt-6">
         <h1 class="text-5xl font-extrabold tracking-tight silver-text"><?php echo $title; ?></h1>
@@ -355,6 +408,7 @@ $logo_path = 'logo.png';
         </div>
     </div>
 </section>
+
 <section id="detalhes" class="py-24 px-10 max-w-7xl mx-auto">
     <h2 class="text-3xl font-bold mb-12 silver-text">Ficha Técnica Detalhada</h2>
 
@@ -405,6 +459,8 @@ $logo_path = 'logo.png';
     </a>
 </section>
 
+</main>
+
 <footer class="py-16 bg-dark-card border-t border-highlight/10 mt-20">
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6 lg:px-12">
       <div>
@@ -417,7 +473,7 @@ $logo_path = 'logo.png';
 
       <div>
         <h4 class="text-sm text-highlight uppercase font-bold mb-3">Fale Connosco</h4>
-        <a href="mailto:warriorfcar@gmail.com" class="block text-white mb-1">warriorfcar@gmail.com</a>
+        <a href="mailto:geral@wfcars.pt" class="block text-white mb-1">geral@wfcars.pt</a>
         <a href="tel:+351910291038" class="block text-white">+351 910 291 038 (Chamada)</a>
       </div>
 
@@ -441,15 +497,14 @@ $logo_path = 'logo.png';
 </footer>
 
 <script>
-    // Função auxiliar para fechar o menu mobile (Copiada das outras páginas)
+    // Função auxiliar para fechar o menu mobile
     function closeMobileMenu() {
         document.getElementById('mobile-menu-overlay').classList.remove('active');
-        // Esconde completamente após a transição (400ms do CSS)
         setTimeout(() => document.getElementById('mobile-menu-overlay').classList.add('hidden'), 400);
     }
     
     document.addEventListener('DOMContentLoaded', function() {
-        // Lógica de abertura/fecho do menu mobile (Copiada das outras páginas)
+        // Lógica do Menu Hamburger
         const openMenu = document.getElementById('open-menu');
         const closeMenu = document.getElementById('close-menu');
         const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
@@ -457,7 +512,9 @@ $logo_path = 'logo.png';
         if (openMenu && mobileMenuOverlay) {
             openMenu.addEventListener('click', () => { 
                 mobileMenuOverlay.classList.remove('hidden'); 
-                setTimeout(() => mobileMenuOverlay.classList.add('active'), 10);
+                // Force reflow
+                void mobileMenuOverlay.offsetWidth;
+                mobileMenuOverlay.classList.add('active');
             });
         }
         
@@ -465,16 +522,14 @@ $logo_path = 'logo.png';
             closeMenu.addEventListener('click', closeMobileMenu);
         }
         
-        // 1. Inicializa o Swiper de Thumbnails primeiro
+        // 1. Inicializa o Swiper de Thumbnails
         var galleryThumbs = new Swiper(".galleryThumbs", {
             spaceBetween: 10,
-            slidesPerView: 5, // Ajustado para 5 slides em mobile
+            slidesPerView: 5,
             freeMode: true,
             watchSlidesProgress: true,
             breakpoints: {
-                768: { // Tablet/Desktop
-                    slidesPerView: 6,
-                }
+                768: { slidesPerView: 6 }
             },
             navigation: {
                 nextEl: null,
@@ -482,7 +537,7 @@ $logo_path = 'logo.png';
             }
         });
 
-        // 2. Inicializa o Swiper principal, linkando aos Thumbs
+        // 2. Inicializa o Swiper principal
         var gallerySlider = new Swiper(".gallerySlider", {
             spaceBetween: 10,
             loop: true,

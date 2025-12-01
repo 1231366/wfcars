@@ -496,13 +496,17 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
         }
 
         function displayToastr(status, message) {
-            // Decodifica Base64
-            let decodedMessage = atob(message); 
-            
-            if (status === 'success') {
-                toastr.success(decodedMessage, 'Sucesso!');
-            } else if (status === 'error') {
-                toastr.error(decodedMessage, 'Erro!');
+            // Decodifica Base64 (assumindo que o backend usa base64)
+            try {
+                 let decodedMessage = atob(message); 
+                 if (status === 'success') {
+                    toastr.success(decodedMessage, 'Sucesso!');
+                } else if (status === 'error') {
+                    toastr.error(decodedMessage, 'Erro!');
+                }
+            } catch (e) {
+                // Em caso de erro de decodificação, mostra a mensagem bruta
+                 toastr.error(message, 'Erro!');
             }
         }
 
@@ -521,7 +525,7 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
             }
         }
 
-        // --- CÓDIGO JS DE EDIÇÃO ORIGINAL (Lógica de Fotos) ---
+        // --- CÓDIGO JS DE EDIÇÃO CORRIGIDO (Lógica de Fotos com Drag & Drop) ---
         const imageUpload = document.getElementById('image-upload');
         const previewContainer = document.getElementById('preview-container');
         const form = document.getElementById('edit-form');
@@ -529,74 +533,59 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
         const maxFiles = 8;
         
         let dragSrcEl = null; 
-
-        // Lista de caminhos de fotos existentes (SEM '../' prefixo)
-        let photosToKeepCurrent = new Set(<?php echo json_encode($existing_photos_paths); ?>); 
+        
+        // Fotos existentes carregadas do PHP. Serão mapeadas para currentPreviews
+        const initialExistingPaths = <?php echo json_encode($existing_photos_paths); ?>; 
         
         // Objeto FileList simulado para novos uploads
         let newUploadsFileList = new DataTransfer();
 
-        // Variável para armazenar o estado das fotos novas e existentes no DOM (para ordenação)
+        // Variável principal para armazenar o estado das fotos novas e existentes no DOM (inclui File Objects)
+        // Estrutura: { path: URL/Caminho, isNew: bool, identifier: string (caminho antigo ou nome do ficheiro novo), fileObject: File/null }
         let currentPreviews = []; 
 
-        // Função para re-renderizar todas as miniaturas
+        // Função para re-renderizar todas as miniaturas e sincronizar inputs
         function renderPreviews() {
             previewContainer.innerHTML = '';
-            currentPreviews = [];
             
-            // 1. Criar a lista de pré-visualizações a partir do estado interno
-            
-            // Fotos existentes
-            photosToKeepCurrent.forEach(path => {
-                currentPreviews.push({ path: path, isNew: false, fileName: path });
-            });
-            
-            // Novos uploads
-            Array.from(newUploadsFileList.files).forEach(file => {
-                const path = URL.createObjectURL(file);
-                currentPreviews.push({ path: path, isNew: true, fileName: file.name, fileObject: file });
-            });
-            
-            // Limitar a 8 fotos no total
+            // 1. Limitar a 8 fotos no total (se necessário)
             currentPreviews = currentPreviews.slice(0, maxFiles);
 
             // 2. Desenhar a lista final no DOM
             currentPreviews.forEach((item, index) => {
-                const colDiv = createPreviewElement(item.path, item.fileName, index, item.isNew);
+                // Usamos 'identifier' como o nome/caminho que o backend precisa
+                const colDiv = createPreviewElement(item.path, item.identifier, index, item.isNew);
                 previewContainer.appendChild(colDiv);
-                addDragDropListeners(colDiv, item.fileName, item.isNew);
+                addDragDropListeners(colDiv);
             });
             
-            // 3. Sincronizar campo escondido para submissão
+            // 3. Sincronizar campo escondido para submissão e FileList
             updateHiddenPathsInput();
         }
 
         // Cria o elemento de pré-visualização no DOM
-        function createPreviewElement(src, fileName, index, isNew) {
+        function createPreviewElement(src, identifier, index, isNew) {
             // Adiciona o '../' apenas para caminhos existentes (para o browser carregar)
             const finalSrc = isNew ? src : '../' + src; 
             
             const colDiv = document.createElement('div');
             colDiv.classList.add('col-6', 'col-md-3', 'col-lg-2');
             colDiv.setAttribute('draggable', 'true');
-            colDiv.setAttribute('data-index', index);
-            colDiv.setAttribute('data-file-name', fileName); // Caminho para existentes, Nome de ficheiro para novos
-            colDiv.setAttribute('data-is-new', isNew);
+            colDiv.setAttribute('data-identifier', identifier); // Caminho para existentes, Nome de ficheiro para novos
             
             colDiv.innerHTML = `
                 <div class="preview-item">
                     <img src="${finalSrc}" alt="Preview" />
-                    <button type="button" data-file-name="${fileName}" data-is-new="${isNew}" class="remove-btn">
+                    <button type="button" data-identifier="${identifier}" data-is-new="${isNew}" class="remove-btn">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
             `;
             
             colDiv.querySelector('.remove-btn').addEventListener('click', function(e) {
-                // Previne o clique no botão de disparar o clique na box
                 e.stopPropagation(); 
                 handleRemoveItem(
-                    e.target.closest('.remove-btn').getAttribute('data-file-name'),
+                    e.target.closest('.remove-btn').getAttribute('data-identifier'),
                     e.target.closest('.remove-btn').getAttribute('data-is-new') === 'true'
                 );
             });
@@ -605,22 +594,23 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
         }
 
         // Remove um item (existente ou novo) da lista e re-renderiza
-        function handleRemoveItem(fileName, isNew) {
-            if (!isNew) {
-                // 1. Remove da lista de existentes a manter
-                photosToKeepCurrent.delete(fileName); 
-            } else {
-                // 2. Remove do FileList de novos uploads
+        function handleRemoveItem(identifierToRemove, isNew) {
+            
+            // 1. Remover do array principal (currentPreviews)
+            currentPreviews = currentPreviews.filter(item => item.identifier !== identifierToRemove);
+            
+            // 2. Se for novo, remover do FileList de novos uploads
+            if (isNew) {
                 const newFiles = new DataTransfer();
                 Array.from(newUploadsFileList.files).forEach(file => {
-                    if (file.name !== fileName) {
+                    if (file.name !== identifierToRemove) { // O identifier é o file.name para novos uploads
                         newFiles.items.add(file);
                     }
                 });
                 newUploadsFileList = newFiles;
-                imageUpload.files = newUploadsFileList.files;
             }
             
+            imageUpload.files = newUploadsFileList.files;
             renderPreviews();
         }
 
@@ -628,8 +618,16 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
         imageUpload.addEventListener('change', function() {
             Array.from(imageUpload.files).forEach(file => {
                  // Apenas adiciona se o limite total não for excedido
-                 if (photosToKeepCurrent.size + newUploadsFileList.files.length < maxFiles) {
+                 if (currentPreviews.length < maxFiles) {
                     newUploadsFileList.items.add(file);
+                    
+                    // Adicionar ao array principal de previews
+                    currentPreviews.push({ 
+                        path: URL.createObjectURL(file), 
+                        isNew: true, 
+                        identifier: file.name, // Usamos o nome do ficheiro como identificador
+                        fileObject: file 
+                    });
                  } else {
                      toastr.warning(`Atingido o limite de ${maxFiles} fotos.`, 'Limite de Upload');
                  }
@@ -641,20 +639,30 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
             renderPreviews();
         });
 
-        // Sincroniza o hidden input com a ordem atual dos caminhos para o backend
+        // Sincroniza o hidden input com a ordem atual dos identificadores para o backend
         function updateHiddenPathsInput() {
             const finalOrderPaths = [];
+            
+             // 1. Sincronizar a ordem dos identificadores (paths antigos ou nomes de ficheiros novos)
              document.querySelectorAll('#preview-container > div').forEach(colDiv => {
-                 finalOrderPaths.push(colDiv.getAttribute('data-file-name'));
+                 finalOrderPaths.push(colDiv.getAttribute('data-identifier'));
              });
              
-             // O campo escondido recebe a lista JSON ordenada
+             // 2. Sincronizar o array interno 'currentPreviews' com a ordem do DOM
+             const newPreviews = [];
+             finalOrderPaths.forEach(identifier => {
+                 const item = currentPreviews.find(p => p.identifier === identifier);
+                 if (item) newPreviews.push(item);
+             });
+             currentPreviews = newPreviews;
+             
+             // 3. Atualizar o input escondido com a lista JSON ordenada
              photosToKeepPathsInput.value = JSON.stringify(finalOrderPaths);
         }
 
         // --- DRAG AND DROP LÓGICA ---
 
-        function addDragDropListeners(element, fileName, isNew) {
+        function addDragDropListeners(element) {
              element.addEventListener('dragstart', handleDragStart);
              element.addEventListener('dragover', handleDragOver);
              element.addEventListener('dragleave', handleDragLeave);
@@ -665,7 +673,7 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
         function handleDragStart(e) {
             dragSrcEl = this;
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', this.getAttribute('data-file-name'));
+            e.dataTransfer.setData('text/plain', this.getAttribute('data-identifier'));
             
             setTimeout(() => {
                  this.style.opacity = '0.5';
@@ -677,7 +685,6 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             
-            // Se o drag não for no próprio elemento
             if (this !== dragSrcEl) {
                 this.classList.add('drag-over');
             }
@@ -708,7 +715,7 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                 container.insertBefore(dragSrcEl, referenceNode);
                 
                 // Sincronizar o array interno e o campo escondido
-                reorderInternalState();
+                updateHiddenPathsInput(); // updateHiddenPathsInput agora faz a reordenação do array interno
             }
         }
         
@@ -720,54 +727,18 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
             });
         }
         
-        // Função para reordenar o array JavaScript interno após um Drag & Drop
-        function reorderInternalState() {
-            const finalOrderNames = [];
-            
-            // 1. Obter a nova ordem a partir do DOM
-            document.querySelectorAll('#preview-container > div').forEach(colDiv => {
-                finalOrderNames.push(colDiv.getAttribute('data-file-name'));
-            });
-            
-            // 2. Reconstruir a lista de pre-visualizações (currentPreviews) na nova ordem
-            const newPreviews = [];
-            finalOrderNames.forEach(name => {
-                const item = currentPreviews.find(p => p.fileName === name);
-                if (item) {
-                    newPreviews.push(item);
-                }
-            });
-            currentPreviews = newPreviews;
-            
-            // 3. Reordenar o FileList (apenas os novos uploads) para manter a coerência
-            const newFiles = new DataTransfer();
-            currentPreviews.filter(p => p.isNew).forEach(p => {
-                 newFiles.items.add(p.fileObject);
-            });
-            newUploadsFileList = newFiles;
-            imageUpload.files = newUploadsFileList.files;
-
-            // 4. Sincronizar o input escondido
-            updateHiddenPathsInput();
-        }
-
         // Carregar as previews existentes ao carregar a página
         window.addEventListener('load', () => {
-             // Inicia com as fotos existentes carregadas pelo PHP
-             photosToKeepCurrent.forEach(path => {
-                // Adiciona ao array interno na ordem correta inicial
-                currentPreviews.push({ path: path, isNew: false, fileName: path }); 
+             // Mapeia os caminhos existentes para a estrutura de preview
+             initialExistingPaths.forEach(path => {
+                currentPreviews.push({ 
+                    path: path, 
+                    isNew: false, 
+                    identifier: path, // O identificador para caminhos antigos é o próprio caminho
+                    fileObject: null 
+                }); 
              });
              renderPreviews();
-
-             // A inicialização do MDB (mdb.init()) foi removida
-             // porque removemos os componentes 'form-outline'.
-
-        });
-        
-        // Listener para o submit do formulário para garantir que o input escondido está atualizado
-        form.addEventListener('submit', (e) => {
-            updateHiddenPathsInput(); 
         });
     </script>
 </body>

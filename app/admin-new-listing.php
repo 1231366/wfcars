@@ -37,6 +37,7 @@ function display_status_message() {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
+        /* (BLOCO DE ESTILOS UNIFICADO COM AS OUTRAS PÁGINAS) */
         :root {
             --mdb-dark-rgb: 28, 28, 28;
             --mdb-secondary-rgb: 192, 192, 192; 
@@ -293,15 +294,26 @@ function display_status_message() {
                     <img src="logo.png" alt="WF Cars" class="sidebar-logo mb-3" />
                 </div>
                 <div class="list-group list-group-flush mx-3">
-                    <a href="admin-dashboard.php" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-dashboard.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-dashboard.php') ? 'active' : ''; ?>">
                         <i class="fas fa-chart-line fa-fw"></i><span>Dashboard</span>
                     </a>
-                    <a href="admin-active-listings.php" class="list-group-item list-group-item-action ripple">
+                    <a href="admin-active-listings.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-active-listings.php') ? 'active' : ''; ?>">
                         <i class="fas fa-car fa-fw"></i><span>Anúncios Ativos</span>
                     </a>
-                    <a href="admin-new-listing.php" class="list-group-item list-group-item-action ripple active">
+                    <a href="admin-new-listing.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-new-listing.php') ? 'active' : ''; ?>">
                         <i class="fas fa-plus fa-fw"></i><span class="text-highlight">Novo Anúncio</span>
                     </a>
+                    
+                    <?php 
+                    // Verifica a sessão para exibir link de Gestão de Utilizadores
+                    if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): 
+                    ?>
+                    <div class="sidebar-divider"></div>
+                    <a href="admin-users.php" class="list-group-item list-group-item-action ripple <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-users.php' || basename($_SERVER['PHP_SELF']) == 'admin-create-user.php') ? 'active' : ''; ?>">
+                        <i class="fas fa-users-cog fa-fw"></i><span class="text-highlight">Gerir Utilizadores</span>
+                    </a>
+                    <?php endif; ?>
+
                 </div>
             </div>
 
@@ -445,22 +457,26 @@ function display_status_message() {
     </main>
     
     <nav class="mobile-nav-app d-lg-none">
-        <a href="admin-dashboard.php" class="mobile-nav-item">
+        <a href="admin-dashboard.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-dashboard.php') ? 'active' : ''; ?>">
             <i class="fas fa-chart-line"></i>
             <div>Dash</div>
         </a>
-        <a href="admin-active-listings.php" class="mobile-nav-item">
+        <a href="admin-active-listings.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-active-listings.php') ? 'active' : ''; ?>">
             <i class="fas fa-car"></i>
             <div>Anúncios</div>
         </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-search-dollar"></i>
-            <div>Vendas</div>
-        </a>
-        <a href="admin-new-listing.php" class="mobile-nav-item active">
+        <a href="admin-new-listing.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-new-listing.php') ? 'active' : ''; ?>">
             <i class="fas fa-plus-circle"></i>
             <div>Novo</div>
         </a>
+        
+        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+        <a href="admin-users.php" class="mobile-nav-item <?php echo (basename($_SERVER['PHP_SELF']) == 'admin-users.php' || basename($_SERVER['PHP_SELF']) == 'admin-create-user.php') ? 'active' : ''; ?>">
+            <i class="fas fa-users-cog"></i>
+            <div>Users</div>
+        </a>
+        <?php endif; ?>
+        
         <a href="logout.php" class="mobile-nav-item">
             <i class="fas fa-sign-out-alt"></i>
             <div>Sair</div>

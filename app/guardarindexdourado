@@ -383,7 +383,7 @@
                 <div class="order-1 lg:order-2 relative">
                     <div class="relative h-[400px] lg:h-[550px] overflow-hidden rounded-lg shadow-2xl w-11/12 mx-auto lg:w-full">
                         <img 
-                            src="keys.jpg" 
+                            src="keys.jpeg" 
                             alt="Chave de carro de luxo" 
                             class="w-full h-full object-cover filter brightness-75"
                         />

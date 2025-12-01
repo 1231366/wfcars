@@ -29,6 +29,8 @@ function display_status_message() {
         echo '</div>';
     }
 }
+// Variável de controle para o menu mobile
+$current_page = basename($_SERVER['PHP_SELF']); 
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -42,7 +44,6 @@ function display_status_message() {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
-        /* (Incluir aqui o bloco <style> completo de admin-active-listings.php para consistência) */
         :root {
             --mdb-dark-rgb: 28, 28, 28;
             --mdb-secondary-rgb: 192, 192, 192; 
@@ -140,6 +141,42 @@ function display_status_message() {
         .list-group-item.text-danger i {
             color: var(--mdb-danger) !important;
         }
+        
+        /* === MENU INFERIOR MOBILE (APP STYLE) === */
+        .mobile-nav-app {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;
+            background-color: rgb(var(--sidebar-bg)) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            height: 65px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .mobile-nav-item {
+            color: rgb(var(--link-color)); 
+            opacity: 0.8;
+            transition: color 0.2s, opacity 0.2s;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.7rem; 
+            font-weight: 500;
+        }
+        .mobile-nav-item i { 
+            font-size: 1.3rem; 
+            margin-bottom: 3px;
+            color: rgb(var(--link-color));
+        }
+        
+        .mobile-nav-item.active {
+            color: rgb(var(--active-icon-color)) !important; 
+            opacity: 1;
+            font-weight: 600;
+        }
+        .mobile-nav-item.active i {
+            color: rgb(var(--active-icon-color)) !important;
+        }
 
         /* === RESPONSIVIDADE & LAYOUT === */
         main { 
@@ -148,11 +185,42 @@ function display_status_message() {
             margin-left: 0 !important; 
         }
 
+        @media (max-width: 991.98px) {
+            main { padding-bottom: 75px; } /* Adiciona padding para não cobrir a barra inferior */
+            .admin-title-desktop { font-size: 2.5rem; }
+        }
+
         @media (min-width: 992px) {
             main { 
                 margin-left: 240px !important; 
                 margin-top: 0 !important; 
                 padding-top: 20px !important; 
+            }
+            .mobile-nav-app { display: none !important; }
+        }
+        
+        /* === OTIMIZAÇÃO DE TABELA MOBILE (NOVO) === */
+        @media (max-width: 991.98px) {
+            /* Oculta colunas menos importantes no mobile */
+            .user-table th:nth-child(1), .user-table td:nth-child(1), /* ID */
+            .user-table th:nth-child(3), .user-table td:nth-child(3), /* Email */
+            .user-table th:nth-child(5), .user-table td:nth-child(5) { /* Registo */
+                display: none !important;
+            }
+            
+            /* Ajusta o tamanho da fonte e paddings para as colunas restantes */
+            .user-table td, .user-table th {
+                font-size: 0.8rem; 
+                padding: 0.5rem;
+            }
+            .user-table th:nth-child(2), .user-table td:nth-child(2) {
+                min-width: 100px; /* Garante que o username tenha espaço */
+            }
+
+            /* Compacta os botões de Ações */
+            .user-table td:last-child .btn-sm {
+                padding: .25rem .3rem !important; /* Mais compacto */
+                font-size: .7rem !important;
             }
         }
     </style>
@@ -160,6 +228,15 @@ function display_status_message() {
 <body class="bg-dark text-white">
     <?php display_status_message(); ?>
 
+    <nav class="navbar navbar-dark bg-dark d-lg-none" style="background-color: rgb(var(--sidebar-bg)) !important;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="admin-dashboard.php">
+                <img src="logo.png" alt="WF Cars" class="sidebar-logo me-2" />
+                <span class="text-highlight">Gerir Utilizadores</span>
+            </a>
+        </div>
+    </nav>
+    
     <nav id="sidebarMenu" class="d-none d-lg-block sidebar-menu fixed-top shadow">
         <div class="position-sticky d-flex flex-column h-100">
             <div class="sidebar-top-section">
@@ -206,52 +283,81 @@ function display_status_message() {
 
         <div class="card bg-highlight-card border-0 shadow-lg p-3">
             <div class="card-body">
-                <table class="table table-dark table-hover user-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">ID</th>
-                            <th scope="col">Utilizador</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Função</th>
-                            <th scope="col">Registo</th>
-                            <th scope="col">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        if ($result_users && $result_users->num_rows > 0) {
-                            while ($user = $result_users->fetch_assoc()) {
-                                $role_class = ($user['role'] === 'admin') ? 'user-role-admin' : '';
-                        ?>
-                        <tr>
-                            <th scope="row"><?php echo $user['id']; ?></th>
-                            <td><?php echo htmlspecialchars($user['username']); ?></td>
-                            <td><?php echo htmlspecialchars($user['email']); ?></td>
-                            <td><span class="<?php echo $role_class; ?>"><?php echo htmlspecialchars(ucfirst($user['role'])); ?></span></td>
-                            <td><?php echo date('Y-m-d', strtotime($user['data_registo'])); ?></td>
-                            <td>
-                                <a href="admin-create-user.php?edit_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-info me-2" title="Editar Utilizador">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                <a href="process_user_management.php?action=delete&user_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-danger" title="Apagar Utilizador" onclick="return confirm('Tem certeza que deseja APAGAR o utilizador <?php echo htmlspecialchars($user['username']); ?>?');">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover user-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Utilizador</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Função</th>
+                                <th scope="col">Registo</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            if ($result_users && $result_users->num_rows > 0) {
+                                while ($user = $result_users->fetch_assoc()) {
+                                    $role_class = ($user['role'] === 'admin') ? 'user-role-admin' : '';
+                            ?>
+                            <tr>
+                                <th scope="row"><?php echo $user['id']; ?></th>
+                                <td><?php echo htmlspecialchars($user['username']); ?></td>
+                                <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                <td><span class="<?php echo $role_class; ?>"><?php echo htmlspecialchars(ucfirst($user['role'])); ?></span></td>
+                                <td><?php echo date('Y-m-d', strtotime($user['data_registo'])); ?></td>
+                                <td>
+                                    <a href="admin-create-user.php?edit_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-info me-2" title="Editar Utilizador">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                    <a href="process_user_management.php?action=delete&user_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-danger" title="Apagar Utilizador" onclick="return confirm('Tem certeza que deseja APAGAR o utilizador <?php echo htmlspecialchars($user['username']); ?>?');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php
+                                }
+                            } else {
+                                echo '<tr><td colspan="6" class="text-center text-subtle">Nenhum utilizador encontrado.</td></tr>';
                             }
-                        } else {
-                            echo '<tr><td colspan="6" class="text-center text-subtle">Nenhum utilizador encontrado.</td></tr>';
-                        }
-                        ?>
-                    </tbody>
-                </table>
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
     </main>
+    
+    <nav class="mobile-nav-app d-lg-none">
+        <a href="admin-dashboard.php" class="mobile-nav-item <?php echo ($current_page == 'admin-dashboard.php') ? 'active' : ''; ?>">
+            <i class="fas fa-chart-line"></i>
+            <div>Dash</div>
+        </a>
+        <a href="admin-active-listings.php" class="mobile-nav-item <?php echo ($current_page == 'admin-active-listings.php') ? 'active' : ''; ?>">
+            <i class="fas fa-car"></i>
+            <div>Anúncios</div>
+        </a>
+        <a href="admin-new-listing.php" class="mobile-nav-item <?php echo ($current_page == 'admin-new-listing.php') ? 'active' : ''; ?>">
+            <i class="fas fa-plus-circle"></i>
+            <div>Novo</div>
+        </a>
+        
+        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+        <a href="admin-users.php" class="mobile-nav-item <?php echo ($current_page == 'admin-users.php') ? 'active' : ''; ?>">
+            <i class="fas fa-users-cog"></i>
+            <div>Users</div>
+        </a>
+        <?php endif; ?>
+        
+        <a href="logout.php" class="mobile-nav-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <div>Sair</div>
+        </a>
+    </nav>
     
     </body>
 </html>

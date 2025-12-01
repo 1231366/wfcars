@@ -87,7 +87,6 @@ if (isset($_GET['error'])) {
             </div>
             <button type="submit" class="btn btn-primary btn-block">ENTRAR</button>
         </form>
-        <p class="text-center small mt-3">Utilizador de teste: **admin / admin123**</p>
     </div>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.umd.min.js"></script>
 </body>
