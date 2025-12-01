@@ -117,17 +117,6 @@ We utilize a custom configuration in Tailwind to achieve the "WFCARS Look":
 
 ---
 
-## 🤝 Contribution
-
-Feel free to fork this project and submit a Pull Request. Whether it's fixing a bug or adding a new "Supercar Mode," all contributions are welcome!
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
----
 
 ## 📄 License
 
