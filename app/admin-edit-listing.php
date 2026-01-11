@@ -442,10 +442,12 @@ $current_fuel = $anuncio['tipo_combustivel'] ?? 'Diesel';
                              <div class="mb-4">
                                 <label class="input-label-fixed text-highlight" for="combustivel">Combustível</label>
                                 <select id="combustivel" name="combustivel" class="form-select text-white" style="background-color: rgb(var(--mdb-primary-rgb)); border-color: rgba(192, 192, 192, 0.5);">
-                                    <option value="Diesel" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Diesel' ? 'selected' : ''; ?>>Diesel</option>
-                                    <option value="Gasolina" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Gasolina' ? 'selected' : ''; ?>>Gasolina</option>
-                                    <option value="Híbrido" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Híbrido' ? 'selected' : ''; ?>>Híbrido</option>
-                                    <option value="Elétrico" <?php echo ($anuncio['tipo_combustivel'] ?? '') === 'Elétrico' ? 'selected' : ''; ?>>Elétrico</option>
+                                    <option value="Diesel" <?php echo ($current_fuel === 'Diesel') ? 'selected' : ''; ?>>Diesel</option>
+                                    <option value="Gasolina" <?php echo ($current_fuel === 'Gasolina') ? 'selected' : ''; ?>>Gasolina</option>
+                                    <option value="Híbrido" <?php echo ($current_fuel === 'Híbrido') ? 'selected' : ''; ?>>Híbrido</option>
+                                    <option value="Híbrido Diesel" <?php echo ($current_fuel === 'Híbrido Diesel') ? 'selected' : ''; ?>>Híbrido Diesel</option>
+                                    <option value="Híbrido Gasolina" <?php echo ($current_fuel === 'Híbrido Gasolina') ? 'selected' : ''; ?>>Híbrido Gasolina</option>
+                                    <option value="Elétrico" <?php echo ($current_fuel === 'Elétrico') ? 'selected' : ''; ?>>Elétrico</option>
                                 </select>
                             </div>
                         </div>

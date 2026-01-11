@@ -8,8 +8,9 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Lógica de Filtragem: Padrão é 'Ativo'
-$current_status = isset($_GET['list']) && in_array($_GET['list'], ['Vendido', 'Ativo']) ? $_GET['list'] : 'Ativo';
+// Lógica de Filtragem: Aceita todos os estados válidos
+$valid_statuses = ['Ativo', 'Vendido', 'Reservado', 'Brevemente'];
+$current_status = isset($_GET['list']) && in_array($_GET['list'], $valid_statuses) ? $_GET['list'] : 'Ativo';
 
 // Função para mostrar mensagens de status (reutilizada)
 function display_status_message() {
@@ -49,9 +50,11 @@ $sql_listings = "SELECT
 $result_listings = $conn->query($sql_listings);
 $listings_count = $result_listings ? $result_listings->num_rows : 0;
 
-// Lógica para contar ativos e vendidos (para os botões)
+// Lógica para contar estados (para os botões)
 $ativos_count_all = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Ativo'")->fetch_assoc()['count'];
 $vendidos_count_all = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Vendido'")->fetch_assoc()['count'];
+$reservados_count_all = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Reservado'")->fetch_assoc()['count'];
+$brevemente_count_all = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Brevemente'")->fetch_assoc()['count'];
 
 // NOVO: Contar quantos carros estão atualmente em destaque (Ativos)
 $destaques_count = $conn->query("SELECT COUNT(*) as count FROM anuncios WHERE status = 'Ativo' AND destaque = 1")->fetch_assoc()['count'];
@@ -64,7 +67,7 @@ $can_highlight = $destaques_count < $max_destaques;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WFCARS | Anúncios <?php echo $current_status === 'Ativo' ? 'Ativos' : 'Vendidos'; ?></title>
+    <title>WFCARS | Anúncios <?php echo htmlspecialchars($current_status); ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
@@ -314,11 +317,11 @@ $can_highlight = $destaques_count < $max_destaques;
     <main>
         
         <h1 class="admin-title-desktop mb-5">
-            Anúncios <span class="text-highlight"><?php echo $current_status === 'Ativo' ? 'Ativos' : 'Vendidos'; ?></span>
+            Anúncios <span class="text-highlight"><?php echo htmlspecialchars($current_status); ?></span>
         </h1>
         
-        <div class="mb-4 d-flex">
-            <a href="admin-active-listings.php?list=Ativo" class="btn btn-sm btn-rounded me-2 
+        <div class="mb-4 d-flex flex-wrap gap-2">
+            <a href="admin-active-listings.php?list=Ativo" class="btn btn-sm btn-rounded 
                 <?php echo $current_status === 'Ativo' ? 
                     'btn-light' : 
                     'btn-secondary-subtle text-white'; ?>" 
@@ -334,6 +337,24 @@ $can_highlight = $destaques_count < $max_destaques;
                 style="background-color: <?php echo $current_status === 'Vendido' ? 'rgb(var(--mdb-secondary-rgb))' : 'rgb(45, 45, 45)'; ?>; color: <?php echo $current_status === 'Vendido' ? 'rgb(var(--mdb-primary-rgb))' : 'white'; ?>;"
             >
                 Vendidos (<?php echo $vendidos_count_all; ?>)
+            </a>
+
+            <a href="admin-active-listings.php?list=Reservado" class="btn btn-sm btn-rounded 
+                <?php echo $current_status === 'Reservado' ? 
+                    'btn-light' : 
+                    'btn-secondary-subtle text-white'; ?>" 
+                style="background-color: <?php echo $current_status === 'Reservado' ? 'rgb(var(--mdb-secondary-rgb))' : 'rgb(45, 45, 45)'; ?>; color: <?php echo $current_status === 'Reservado' ? 'rgb(var(--mdb-primary-rgb))' : 'white'; ?>;"
+            >
+                Reservados (<?php echo $reservados_count_all; ?>)
+            </a>
+
+            <a href="admin-active-listings.php?list=Brevemente" class="btn btn-sm btn-rounded 
+                <?php echo $current_status === 'Brevemente' ? 
+                    'btn-light' : 
+                    'btn-secondary-subtle text-white'; ?>" 
+                style="background-color: <?php echo $current_status === 'Brevemente' ? 'rgb(var(--mdb-secondary-rgb))' : 'rgb(45, 45, 45)'; ?>; color: <?php echo $current_status === 'Brevemente' ? 'rgb(var(--mdb-primary-rgb))' : 'white'; ?>;"
+            >
+                Brevemente (<?php echo $brevemente_count_all; ?>)
             </a>
         </div>
         
@@ -364,35 +385,55 @@ $can_highlight = $destaques_count < $max_destaques;
                         
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="listing-price text-highlight"><?php echo $preco_formatado; ?></span>
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center flex-wrap gap-1">
                                 
-                                <?php if ($anuncio['status'] === 'Ativo'): 
-                                    // === BOTÃO DE DESTAQUE ===
-                                    if ($anuncio['destaque'] == 1): ?>
-                                        <form method="POST" action="process_listing_action.php" class="d-inline-block me-2">
-                                            <input type="hidden" name="action" value="unmark_highlight">
-                                            <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-warning" title="Remover Destaque" 
-                                                    onclick="confirmAction(this, 'Remover Destaque', 'Tem certeza que deseja remover o destaque deste anúncio?', 'unmark_highlight', '<?php echo $anuncio['id']; ?>');">
-                                                <i class="fas fa-star-half-alt"></i>
+                                <?php if ($anuncio['status'] !== 'Vendido'): ?>
+                                    
+                                    <?php if ($anuncio['status'] === 'Ativo'): ?>
+                                        <?php if ($anuncio['destaque'] == 1): ?>
+                                            <form method="POST" action="process_listing_action.php" class="d-inline-block">
+                                                <input type="hidden" name="action" value="unmark_highlight">
+                                                <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-warning" title="Remover Destaque" 
+                                                        onclick="confirmAction(this, 'Remover Destaque', 'Tem certeza que deseja remover o destaque deste anúncio?', 'unmark_highlight', '<?php echo $anuncio['id']; ?>');">
+                                                    <i class="fas fa-star-half-alt"></i>
+                                                </button>
+                                            </form>
+                                        <?php elseif ($can_highlight): ?>
+                                            <form method="POST" action="process_listing_action.php" class="d-inline-block">
+                                                <input type="hidden" name="action" value="mark_highlight">
+                                                <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-warning" title="Marcar como Destaque"
+                                                        onclick="confirmAction(this, 'Marcar Destaque', 'Tem certeza que deseja marcar este anúncio como **DESTAQUE**?', 'mark_highlight', '<?php echo $anuncio['id']; ?>');">
+                                                    <i class="far fa-star"></i>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                             <button class="btn btn-sm btn-outline-secondary-subtle text-secondary" title="Limite de Destaques Atingido" disabled>
+                                                 <i class="far fa-star"></i>
                                             </button>
-                                        </form>
-                                    <?php elseif ($can_highlight): ?>
-                                        <form method="POST" action="process_listing_action.php" class="d-inline-block me-2">
-                                            <input type="hidden" name="action" value="mark_highlight">
-                                            <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-warning" title="Marcar como Destaque"
-                                                    onclick="confirmAction(this, 'Marcar Destaque', 'Tem certeza que deseja marcar este anúncio como **DESTAQUE**?', 'mark_highlight', '<?php echo $anuncio['id']; ?>');">
-                                                <i class="far fa-star"></i>
-                                            </button>
-                                        </form>
-                                    <?php else: ?>
-                                         <button class="btn btn-sm btn-outline-secondary-subtle text-secondary me-2" title="Limite de Destaques Atingido" disabled>
-                                             <i class="far fa-star"></i>
-                                        </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
+
+                                    <form method="POST" action="process_listing_action.php" class="d-inline-block">
+                                        <input type="hidden" name="action" value="mark_reserved">
+                                        <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-warning" title="Marcar Reservado"
+                                                onclick="confirmAction(this, 'Reservar', 'Marcar como RESERVADO?', 'mark_reserved', '<?php echo $anuncio['id']; ?>');">
+                                            <i class="fas fa-bookmark"></i>
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="process_listing_action.php" class="d-inline-block">
+                                        <input type="hidden" name="action" value="mark_soon">
+                                        <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-info" title="Marcar Brevemente"
+                                                onclick="confirmAction(this, 'Brevemente', 'Marcar como BREVEMENTE?', 'mark_soon', '<?php echo $anuncio['id']; ?>');">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                    </form>
                                 
-                                    <form method="POST" action="process_listing_action.php" class="d-inline-block me-2">
+                                    <form method="POST" action="process_listing_action.php" class="d-inline-block">
                                         <input type="hidden" name="action" value="mark_sold">
                                         <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
                                         <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-success" title="Marcar como Vendido"
@@ -400,6 +441,18 @@ $can_highlight = $destaques_count < $max_destaques;
                                             <i class="fas fa-check"></i>
                                         </button>
                                     </form>
+
+                                    <?php if ($anuncio['status'] !== 'Ativo'): ?>
+                                        <form method="POST" action="process_listing_action.php" class="d-inline-block">
+                                            <input type="hidden" name="action" value="restore">
+                                            <input type="hidden" name="anuncio_id" value="<?php echo $anuncio['id']; ?>">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary-subtle text-white" title="Restabelecer como Ativo"
+                                                    onclick="confirmAction(this, 'Restaurar Anúncio', 'Tem certeza que deseja **RESTAURAR** o anúncio **<?php echo htmlspecialchars($anuncio['titulo']); ?>**? Ele voltará para a lista de ATIVOS.', 'restore', '<?php echo $anuncio['id']; ?>');">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+
                                 <?php else: ?>
                                     <form method="POST" action="process_listing_action.php" class="d-inline-block me-2">
                                         <input type="hidden" name="action" value="restore">
@@ -411,7 +464,7 @@ $can_highlight = $destaques_count < $max_destaques;
                                     </form>
                                 <?php endif; ?>
                                 
-                                <a href="admin-edit-listing.php?id=<?php echo $anuncio['id']; ?>" class="btn btn-sm btn-outline-secondary-subtle text-info me-2" title="Editar">
+                                <a href="admin-edit-listing.php?id=<?php echo $anuncio['id']; ?>" class="btn btn-sm btn-outline-secondary-subtle text-info" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
 
@@ -432,7 +485,7 @@ $can_highlight = $destaques_count < $max_destaques;
             <?php
                 }
             } else {
-                echo '<p class="text-subtle ms-4">Não existem anúncios ' . ($current_status === 'Ativo' ? 'ativos' : 'vendidos') . ' para mostrar.</p>';
+                echo '<p class="text-subtle ms-4">Não existem anúncios com o estado ' . htmlspecialchars($current_status) . '.</p>';
             }
             ?>
 

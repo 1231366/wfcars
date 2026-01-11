@@ -421,6 +421,8 @@ function display_status_message() {
                                 <option value="Diesel">Diesel</option>
                                 <option value="Gasolina">Gasolina</option>
                                 <option value="Híbrido">Híbrido</option>
+                                <option value="Híbrido Diesel">Híbrido Diesel</option>
+                                <option value="Híbrido Gasolina">Híbrido Gasolina</option>
                                 <option value="Elétrico">Elétrico</option>
                             </select>
                             <label class="form-label select-label text-highlight">Combustível</label>

@@ -94,6 +94,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'], $_POST['anun
             }
             $stmt->close();
 
+        } else if ($action === 'mark_reserved') {
+            // AÇÃO: Marcar como Reservado
+            $stmt = $conn->prepare("UPDATE anuncios SET status = 'Reservado' WHERE id = ?");
+            $stmt->bind_param("i", $anuncio_id);
+            if ($stmt->execute()) {
+                $success = true;
+                $message = base64_encode("Anúncio marcado como RESERVADO.");
+            } else {
+                throw new Exception("Erro ao marcar como reservado: " . $conn->error);
+            }
+            $stmt->close();
+
+        } else if ($action === 'mark_soon') {
+            // AÇÃO: Marcar como Brevemente
+            $stmt = $conn->prepare("UPDATE anuncios SET status = 'Brevemente', destaque = 0 WHERE id = ?");
+            $stmt->bind_param("i", $anuncio_id);
+            if ($stmt->execute()) {
+                $success = true;
+                $message = base64_encode("Anúncio marcado como BREVEMENTE.");
+            } else {
+                throw new Exception("Erro ao marcar como brevemente: " . $conn->error);
+            }
+            $stmt->close();
+
         } else if ($action === 'restore') {
             // AÇÃO: Restaurar (Mudar de Vendido para Ativo)
             $stmt = $conn->prepare("UPDATE anuncios SET status = 'Ativo' WHERE id = ?");

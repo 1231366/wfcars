@@ -22,20 +22,22 @@ $result_stats = $conn->query($sql_stats);
 $stats = $result_stats->fetch_assoc();
 
 // c. Get fixed options (Fuel and Transmission)
-$fuel_types = ['Diesel', 'Gasolina', 'Híbrido', 'Elétrico'];
+$fuel_types = ['Diesel', 'Gasolina', 'Híbrido Diesel', 'Híbrido Gasolina', 'Elétrico'];
 $transmissions = ['Automática', 'Manual'];
 
 
-// --- 2. Query para obter TODOS os anúncios ATIVOS ---
+// --- 2. Query para obter TODOS os anúncios ATIVOS, RESERVADOS e BREVEMENTE ---
 $sql_active = "
     SELECT 
-        a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel,
+        a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel, a.status,
         (SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = a.id AND is_principal = 1 LIMIT 1) AS foto_principal
     FROM 
         anuncios a
     WHERE 
-        LOWER(a.status) = 'ativo' 
+        a.status IN ('Ativo', 'Reservado', 'Brevemente')
     ORDER BY 
+        FIELD(a.status, 'Ativo', 'Reservado', 'Brevemente'),
+        a.destaque DESC, 
         a.data_criacao DESC
 ";
 $result_active = $conn->query($sql_active);
@@ -77,7 +79,7 @@ function format_price($value) {
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@200;300;400;600;700;800;900&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
@@ -139,19 +141,21 @@ function format_price($value) {
             transform: translateY(-4px);
         }
         .chrome-text{background:linear-gradient(90deg,#fff,#c8c8c8,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 8px rgba(200,200,200,0.12)}
+        
         .btn-silver{background:linear-gradient(180deg,var(--color-highlight),#f5f5f5);color:#0b0b0b;font-weight:800}
 
-        /* --- HEADER DESKTOP (Sincronizado com Index) --- */
+        /* --- HEADER DESKTOP (Sincronizado com Index - ORBITRON) --- */
         .h-16 { height: 4rem !important; } 
         .header-logo-img { height: 4rem !important; }
         
         .header-nav-link {
-            font-weight: 300; 
-            letter-spacing: 0.05em; 
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-size: 0.9rem;
             text-shadow: 0 0 10px rgba(200,200,200,0.1);
-            transition: color 0.3s;
-            font-size: 1.1rem; 
-            font-family: 'Playfair Display', serif; 
+            transition: color 0.3s, transform 0.3s;
             color: var(--color-subtle) !important;
         }
         
@@ -159,8 +163,17 @@ function format_price($value) {
         a[href="inventory.php"].header-nav-link {
             color: var(--color-highlight) !important;
         }
+        
         .header-nav-link:hover {
             color: var(--color-highlight) !important;
+            transform: translateY(-2px);
+        }
+
+        header .btn-silver {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
 
         /* --- MENU MOBILE ESTILO ROLLS ROYCE (Sincronizado com Index) --- */
@@ -322,6 +335,25 @@ function format_price($value) {
             display: none; 
         }
         
+        /* Destaques e Status */
+        .featured-tag-mobile { 
+            position: absolute; 
+            top: 12px; 
+            left: 12px; 
+            padding: 0.3rem 0.6rem; 
+            font-size: 0.7rem; 
+            z-index: 10; 
+            font-weight: 700; 
+            border-radius: 4px; 
+            text-transform: uppercase; 
+        }
+
+        /* Audio Animations */
+        @keyframes wave { 0%, 100% { height: 8px; opacity: 0.5; } 50% { height: 20px; opacity: 1; } }
+        .animate-wave { animation: wave 1.2s ease-in-out infinite; }
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
+        
         /* --- OTIMIZAÇÃO MÓVEL --- */
         @media(max-width: 639px) {
             .grid { gap: 1rem !important; }
@@ -365,13 +397,13 @@ function format_price($value) {
     <header class="fixed w-full z-40 top-0 left-0 bg-dark-primary/80 backdrop-blur-md border-b border-highlight/20">
         <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-12 py-4">
             <a href="index.php" class="flex items-center gap-4">
-                <img src="<?php echo $logo_path; ?>" alt="WF Cars" class="h-16 header-logo-img" />
+                <img src="logo.png" alt="WF Cars" class="h-16 header-logo-img" />
                 </a>
 
             <div class="hidden lg:flex items-center gap-8">
                 <a href="index.php#about-faq" class="header-nav-link text-subtle hover:text-highlight transition">SOBRE NÓS</a>
                 <a href="inventory.php" class="header-nav-link text-highlight transition">VIATURAS EM STOCK</a> 
-                <a href="index.php#contact" class="ml-4 btn-silver px-5 py-2 rounded-md shadow">FALE CONNOSCO</a>
+                <a href="index.php#contact" class="ml-4 btn-silver px-5 py-2 rounded-md shadow transition-transform hover:scale-105">FALE CONNOSCO</a>
             </div>
 
             <button id="open-menu" class="lg:hidden text-2xl text-subtle"><i class="fa fa-bars"></i></button>
@@ -412,6 +444,16 @@ function format_price($value) {
                     
                     $image_path = !empty($car['foto_principal']) ? '../' . htmlspecialchars($car['foto_principal']) : 'heroimage.jpeg';
                     $price_formatted = format_price($car['preco']);
+
+                    // Badges de Status
+                    $status_badge = '';
+                    if ($car['status'] === 'Reservado') {
+                        $status_badge = '<span class="featured-tag-mobile absolute top-4 left-4 px-3 py-1 text-xs font-bold rounded-full bg-orange-500 text-white shadow-lg z-20">RESERVADO</span>';
+                    } elseif ($car['status'] === 'Brevemente') {
+                        $status_badge = '<span class="featured-tag-mobile absolute top-4 left-4 px-3 py-1 text-xs font-bold rounded-full bg-blue-500 text-white shadow-lg z-20">BREVEMENTE</span>';
+                    } elseif ($car['destaque'] == 1) {
+                        $status_badge = '<span class="featured-tag-mobile absolute top-4 left-4 px-3 py-1 text-xs font-bold rounded-full bg-yellow-400 text-black shadow-lg z-20">DESTAQUE</span>';
+                    }
                 ?>
                 <div class="car-card overflow-hidden group relative">
                     <a href="car-details.php?id=<?php echo $car['id']; ?>">
@@ -422,11 +464,7 @@ function format_price($value) {
                                 <?php echo $price_formatted; ?>
                             </span>
                             
-                            <?php if ($car['destaque'] == 1): ?>
-                                <span class="featured-tag-mobile absolute top-4 left-4 px-3 py-1 text-xs font-bold rounded-full bg-yellow-400 text-black shadow-lg">
-                                    DESTAQUE
-                                </span>
-                            <?php endif; ?>
+                            <?php echo $status_badge; ?>
                         </div>
                     </a>
 
@@ -554,6 +592,25 @@ function format_price($value) {
         </div>
     </footer>
 
+    <audio id="bg-music" loop>
+        <source src="jazz_ambience.mp3" type="audio/mpeg">
+        O seu navegador não suporta áudio.
+    </audio>
+
+    <div id="audio-control-container" class="fixed bottom-6 left-6 z-50 flex items-center gap-3 transition-all duration-1000 transform translate-y-20 opacity-0">
+        
+        <button id="music-toggle-btn" class="group relative w-[50px] h-[50px] rounded-full bg-dark-card/80 border border-highlight/30 text-highlight shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md flex items-center justify-center hover:bg-highlight hover:text-dark-primary transition-all duration-500 overflow-hidden">
+            
+            <div id="music-waves" class="absolute inset-0 flex items-center justify-center gap-1 opacity-0 transition-opacity duration-300">
+                <div class="w-1 h-3 bg-current rounded-full animate-wave"></div>
+                <div class="w-1 h-5 bg-current rounded-full animate-wave animation-delay-200"></div>
+                <div class="w-1 h-3 bg-current rounded-full animate-wave animation-delay-400"></div>
+            </div>
+
+            <i id="music-icon" class="fas fa-play ml-1 text-lg transition-transform duration-300 group-hover:scale-110"></i>
+        </button>
+    </div>
+
     <script>
         // Função para fechar o menu mobile
         function closeMobileMenu() {
@@ -573,6 +630,93 @@ function format_price($value) {
         });
         
         document.getElementById('close-menu').addEventListener('click', closeMobileMenu);
+
+        // --- PERSISTENT AUDIO LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const audio = document.getElementById('bg-music');
+            const btn = document.getElementById('music-toggle-btn');
+            const icon = document.getElementById('music-icon');
+            const waves = document.getElementById('music-waves');
+            const container = document.getElementById('audio-control-container');
+
+            // Ler estado do LocalStorage
+            const isMusicActive = localStorage.getItem('wfcars_music_active') === 'true';
+            const storedTime = parseFloat(localStorage.getItem('wfcars_music_time')) || 0;
+
+            audio.volume = 0; 
+            let isPlaying = false;
+            let fadeInterval;
+
+            // Mostrar botão suavemente
+            setTimeout(() => { if(container) container.classList.remove('translate-y-20', 'opacity-0'); }, 1000);
+
+            // Função Fade
+            function fadeAudio(targetVolume, duration) {
+                const step = 0.05;
+                if (fadeInterval) clearInterval(fadeInterval);
+                fadeInterval = setInterval(() => {
+                    if (audio.volume < targetVolume && targetVolume > 0) {
+                        if (audio.volume + step >= targetVolume) { audio.volume = targetVolume; clearInterval(fadeInterval); } 
+                        else { audio.volume += step; }
+                    } else if (audio.volume > targetVolume) {
+                        if (audio.volume - step <= targetVolume) { audio.volume = targetVolume; clearInterval(fadeInterval); if (targetVolume === 0) audio.pause(); } 
+                        else { audio.volume -= step; }
+                    }
+                }, 50);
+            }
+
+            // Atualizar UI
+            function updateUI(playing) {
+                if (playing) {
+                    icon.classList.add('hidden');
+                    waves.classList.remove('opacity-0');
+                    btn.classList.add('bg-highlight', 'text-dark-primary');
+                    btn.classList.remove('text-highlight');
+                } else {
+                    icon.classList.remove('hidden');
+                    waves.classList.add('opacity-0');
+                    btn.classList.remove('bg-highlight', 'text-dark-primary');
+                    btn.classList.add('text-highlight');
+                }
+            }
+
+            // Auto-Resume
+            if (isMusicActive) {
+                audio.currentTime = storedTime;
+                isPlaying = true;
+                updateUI(true);
+                audio.play().then(() => { fadeAudio(0.4, 1000); }).catch(e => {
+                    console.log("Autoplay blocked:", e);
+                    isPlaying = false; updateUI(false);
+                    localStorage.setItem('wfcars_music_active', 'false');
+                });
+            }
+
+            // Guardar estado
+            window.addEventListener('beforeunload', () => {
+                if(isPlaying) {
+                    localStorage.setItem('wfcars_music_active', 'true');
+                    localStorage.setItem('wfcars_music_time', audio.currentTime);
+                } else {
+                    localStorage.setItem('wfcars_music_active', 'false');
+                }
+            });
+            
+            // Backup periódico
+            setInterval(() => { if(isPlaying) localStorage.setItem('wfcars_music_time', audio.currentTime); }, 3000);
+
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    if (isPlaying) {
+                        isPlaying = false; updateUI(false); fadeAudio(0, 500);
+                        localStorage.setItem('wfcars_music_active', 'false');
+                    } else {
+                        isPlaying = true; updateUI(true); audio.play(); fadeAudio(0.4, 1000);
+                        localStorage.setItem('wfcars_music_active', 'true');
+                    }
+                });
+            }
+        });
     </script>
 
 </body>

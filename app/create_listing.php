@@ -1,162 +1,149 @@
 <?php
 /**
- * Script responsável por processar o formulário 'Novo Anúncio',
- * inserir o carro na DB e lidar com o upload seguro de imagens (até 8).
+ * Script DE CRIAÇÃO (INSERT) - VERSÃO CORRIGIDA PATHS & DEBUG
  */
-
 session_start(); 
 include 'db_connect.php'; 
+
+// Aumentar limites de memória temporariamente para processar imagens
+ini_set('memory_limit', '256M');
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: login.php");
     exit();
 }
-// Configurações de Upload
-$upload_dir = 'uploads/car_photos/'; // Caminho de uploads. Deve estar na raiz, não dentro de /app/ para ser mais limpo.
+
+// === CONFIGURAÇÃO DE UPLOAD ===
+// Caminho relativo a partir deste script. 
+// Se o create_listing.php está na mesma pasta que admin-new-listing.php, não uses /../
+$base_upload_folder = 'uploads/car_photos/'; 
+
 $max_files = 8;
-$allowed_types = ['image/jpeg', 'image/png'];
-$max_size = 5 * 1024 * 1024; // 5 MB por foto
+$allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // --- 1. Recolha e Validação de Campos de Texto ---
+    // 1. Verificar se o POST não excedeu o limite do servidor
+    if (empty($_POST) && empty($_FILES) && $_SERVER['CONTENT_LENGTH'] > 0) {
+        $error = urlencode("Erro: O tamanho total dos ficheiros excede o limite do servidor (post_max_size).");
+        header("Location: admin-new-listing.php?status=error&message={$error}");
+        exit();
+    }
+
+    // 2. Recolha de Dados
     $titulo = trim($conn->real_escape_string($_POST['modelo'])); 
     $marca = trim($conn->real_escape_string($_POST['marca']));
     $descricao = trim($conn->real_escape_string($_POST['descricao']));
     $transmissao = trim($conn->real_escape_string($_POST['transmissao']));
-    
-    // Novos campos
-    $cilindrada = filter_input(INPUT_POST, 'cilindrada', FILTER_VALIDATE_INT);
     $combustivel = trim($conn->real_escape_string($_POST['combustivel']));
     $raw_extras = trim($conn->real_escape_string($_POST['raw_extras']));
 
-    // Filtros de segurança para números
+    $cilindrada = filter_input(INPUT_POST, 'cilindrada', FILTER_VALIDATE_INT);
     $ano = filter_input(INPUT_POST, 'ano', FILTER_VALIDATE_INT);
     $preco = filter_input(INPUT_POST, 'preco', FILTER_VALIDATE_FLOAT);
     $km = filter_input(INPUT_POST, 'km', FILTER_VALIDATE_INT);
     $hp = filter_input(INPUT_POST, 'hp', FILTER_VALIDATE_INT);
 
-    // Validação de campos obrigatórios
-    if (empty($titulo) || empty($marca) || $ano === false || $preco === false || $km === false || $hp === false || $cilindrada === false || empty($combustivel) || !in_array($transmissao, ['Automática', 'Manual'])) 
-    {
-        $error = urlencode("Erro: Por favor, preencha todos os campos obrigatórios corretamente, incluindo Cilindrada e Combustível.");
+    // Validação Básica
+    if (empty($titulo) || empty($marca) || !$ano || !$preco) {
+        $error = urlencode("Erro: Preencha todos os campos obrigatórios.");
         header("Location: admin-new-listing.php?status=error&message={$error}");
         exit();
     }
             
-    // --- 2. Inserção do Anúncio Principal (Inicia Transação) ---
     $conn->begin_transaction();
     
-    // QUERY ATUALIZADA para incluir cilindrada_cc, tipo_combustivel, raw_extras
-    $sql = "INSERT INTO anuncios (
-                titulo, marca, modelo_ano, cilindrada_cc, tipo_combustivel, raw_extras, descricao, preco, quilometragem, potencia_hp, transmissao
-            ) VALUES (
-                '$titulo', 
-                '$marca', 
-                $ano, 
-                $cilindrada,
-                '$combustivel',
-                '$raw_extras',
-                '$descricao', 
-                $preco, 
-                $km, 
-                $hp, 
-                '$transmissao'
-            )";
+    // 3. INSERT na Base de Dados (Carro)
+    $stmt = $conn->prepare("INSERT INTO anuncios (titulo, marca, modelo_ano, cilindrada_cc, tipo_combustivel, raw_extras, descricao, preco, quilometragem, potencia_hp, transmissao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssiisssdiis", $titulo, $marca, $ano, $cilindrada, $combustivel, $raw_extras, $descricao, $preco, $km, $hp, $transmissao);
             
-    if ($conn->query($sql) === TRUE) {
+    if ($stmt->execute()) {
         $anuncio_id = $conn->insert_id;
-        $all_uploads_success = true;
-        $uploaded_paths = [];
+        $stmt->close();
         
-        // --- 3. Processamento de Imagens ---
-        if (isset($_FILES['car_images'])) {
-            $file_count = count($_FILES['car_images']['name']);
+        // 4. Upload de Fotos (Lógica de Caminhos Melhorada)
+        $uploaded_paths = [];
+        $upload_errors = [];
+
+        if (isset($_FILES['car_images']) && !empty($_FILES['car_images']['name'][0])) {
             
-            // Verifica o número máximo de ficheiros
-            if ($file_count > $max_files) {
-                 $error = urlencode("Erro: Máximo de {$max_files} fotos permitido.");
-                 $conn->rollback();
-                 header("Location: admin-new-listing.php?status=error&message={$error}");
-                 exit();
-            }
+            // Define o caminho absoluto correto
+            // __DIR__ é a pasta onde está este script.
+            // Se 'uploads' está na mesma pasta, usamos apenas __DIR__ . '/' . $folder
+            $absolute_path = __DIR__ . '/' . $base_upload_folder;
             
-            // Criar o diretório se não existir (O diretório 'uploads' deve estar na raiz do projeto)
-            if (!is_dir($upload_dir)) {
-                if (!mkdir($upload_dir, 0755, true)) {
-                    $error = urlencode("Erro fatal: O diretório de upload '{$upload_dir}' não existe e não pôde ser criado. Verifique permissões.");
+            // Cria a pasta se não existir
+            if (!is_dir($absolute_path)) {
+                if (!mkdir($absolute_path, 0755, true)) {
+                    // Se falhar o mkdir, rollback e erro
                     $conn->rollback();
+                    $error = urlencode("Erro crítico: Não foi possível criar a pasta de uploads. Verifique permissões.");
                     header("Location: admin-new-listing.php?status=error&message={$error}");
                     exit();
                 }
             }
 
-            for ($i = 0; $i < $file_count; $i++) {
-                if ($_FILES['car_images']['error'][$i] !== UPLOAD_ERR_OK) { continue; }
-
-                $file_tmp = $_FILES['car_images']['tmp_name'][$i];
-                $file_type = $_FILES['car_images']['type'][$i];
-                $file_size = $_FILES['car_images']['size'][$i];
-                $file_ext = strtolower(pathinfo($_FILES['car_images']['name'][$i], PATHINFO_EXTENSION));
-
-                if (!in_array($file_type, $allowed_types) || $file_size > $max_size) {
-                    $all_uploads_success = false;
-                    break; 
-                }
-
-                $file_name = uniqid('car_', true) . '.' . $file_ext;
-                $file_path = $upload_dir . $file_name;
-
-                if (move_uploaded_file($file_tmp, __DIR__ . '/../' . $file_path)) {
-                    $uploaded_paths[] = $file_path;
-                } else {
-                    $all_uploads_success = false;
-                    break;
+            $total = count($_FILES['car_images']['name']);
+            for ($i = 0; $i < $total && $i < $max_files; $i++) {
+                if ($_FILES['car_images']['error'][$i] === UPLOAD_ERR_OK) {
+                    $tmp_name = $_FILES['car_images']['tmp_name'][$i];
+                    $name = basename($_FILES['car_images']['name'][$i]);
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    
+                    if (in_array($_FILES['car_images']['type'][$i], $allowed_types)) {
+                        $new_name = uniqid('car_', true) . '.' . $ext;
+                        $target_file = $absolute_path . $new_name; 
+                        $db_path = $base_upload_folder . $new_name; // Caminho para guardar na DB
+                        
+                        if (move_uploaded_file($tmp_name, $target_file)) {
+                            $uploaded_paths[] = $db_path;
+                        } else {
+                            $upload_errors[] = "Falha ao mover ficheiro: $name";
+                        }
+                    }
+                } elseif ($_FILES['car_images']['error'][$i] === UPLOAD_ERR_INI_SIZE) {
+                     $upload_errors[] = "Ficheiro $i demasiado grande (upload_max_filesize).";
                 }
             }
         }
         
-        // --- 4. Registo dos Caminhos na DB (Tabela fotos_anuncio) ---
-        if ($all_uploads_success && !empty($uploaded_paths)) {
-            $insert_photos_sql = "INSERT INTO fotos_anuncio (anuncio_id, caminho_foto) VALUES ";
-            $values = [];
-            foreach ($uploaded_paths as $path) {
-                $values[] = "({$anuncio_id}, '{$conn->real_escape_string($path)}')"; 
-            }
-            $insert_photos_sql .= implode(', ', $values);
+        // 5. Guardar Fotos na DB
+        if (!empty($uploaded_paths)) {
+            $sql_photos = "INSERT INTO fotos_anuncio (anuncio_id, caminho_foto, is_principal) VALUES (?, ?, ?)";
+            $stmt_photo = $conn->prepare($sql_photos);
             
-            if ($conn->query($insert_photos_sql) === FALSE) {
-                 $all_uploads_success = false;
+            $bind_path = "";
+            $bind_is_main = 0;
+            // O ID é sempre o mesmo, não precisa estar dentro do loop, mas as variáveis ligadas sim
+            $stmt_photo->bind_param("isi", $anuncio_id, $bind_path, $bind_is_main);
+            
+            foreach ($uploaded_paths as $index => $path) {
+                $bind_path = $path; 
+                $bind_is_main = ($index === 0) ? 1 : 0;
+                $stmt_photo->execute();
             }
+            $stmt_photo->close();
+        } elseif (!empty($_FILES['car_images']['name'][0])) {
+            // Se o utilizador tentou enviar fotos mas nenhuma entrou no array $uploaded_paths
+            // Provavelmente falharam as permissões ou tamanho
+            $conn->rollback();
+            $msg_extra = implode(", ", $upload_errors);
+            $error = urlencode("Carro não criado. Erro no upload das fotos: " . $msg_extra);
+            header("Location: admin-new-listing.php?status=error&message={$error}");
+            exit();
         }
 
-        // --- 5. Commit ou Rollback (Finaliza Transação) ---
-        if ($all_uploads_success) {
-            $conn->commit();
-            $message = urlencode("Anúncio '{$titulo}' publicado com sucesso! Fotos carregadas: " . count($uploaded_paths));
-            header("Location: admin-active-listings.php?status=success&message={$message}"); 
-        } else {
-            $conn->rollback();
-            foreach ($uploaded_paths as $path) {
-                if (file_exists(__DIR__ . '/../' . $path)) {
-                    unlink(__DIR__ . '/../' . $path);
-                }
-            }
-            $error = urlencode("Erro (Fotos): Ocorreu um erro no upload, validação, ou registo de fotos. (Verifique as permissões da pasta 'uploads/car_photos/')");
-            header("Location: admin-new-listing.php?status=error&message={$error}");
-        }
+        $conn->commit();
+        $msg = urlencode("Anúncio criado com sucesso!");
+        header("Location: admin-active-listings.php?status=success&message={$msg}");
 
     } else {
-        // Erro na inserção do anúncio principal
         $conn->rollback();
-        $error = urlencode("Erro ao criar anúncio (DB): " . $conn->error);
+        $error = urlencode("Erro na base de dados: " . $stmt->error);
         header("Location: admin-new-listing.php?status=error&message={$error}");
     }
     
     $conn->close();
     exit(); 
-} else {
-    header("Location: admin-new-listing.php");
-    exit();
 }
 ?>

@@ -8,12 +8,7 @@
 // Inicia sessão para controlar o preloader
 session_start();
 
-// Supondo que 'db_connect.php' existe e a conexão $conn está estabelecida
-// IMPORTANTE: Se db_connect.php não existir ou a ligação falhar, o script PHP falhará.
-@include 'db_connect.php'; // Usamos @ para tentar evitar um erro fatal de inclusão se o ficheiro não estiver lá.
-
-// Verifica se a conexão à base de dados existe antes de tentar usá-la
-$conn_exists = isset($conn) && $conn instanceof mysqli && !$conn->connect_error;
+include 'db_connect.php';
 
 // --- LÓGICA DE ENVIO DE EMAIL (AJAX) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'send_contact') {
@@ -64,34 +59,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 // --- 1. Dados para Filtros ---
-$brands = [];
-$stats = [];
-$real_max_price = 100000;
-$real_max_km = 300000;
-$min_price_val = 0;
-$min_km_val = 0;
 
-if ($conn_exists) {
-    // a. Marcas Únicas
-    $sql_brands = "SELECT DISTINCT marca FROM anuncios WHERE status = 'Ativo' ORDER BY marca ASC";
-    $result_brands = $conn->query($sql_brands);
-    $brands = $result_brands ? $result_brands->fetch_all(MYSQLI_ASSOC) : [];
+// a. Marcas Únicas
+$sql_brands = "SELECT DISTINCT marca FROM anuncios WHERE status = 'Ativo' ORDER BY marca ASC";
+$result_brands = $conn->query($sql_brands);
+$brands = $result_brands ? $result_brands->fetch_all(MYSQLI_ASSOC) : [];
 
-    // b. Estatísticas (Preços e KM)
-    $sql_stats = "SELECT 
-        MIN(preco) as min_price, MAX(preco) as max_price,
-        MIN(quilometragem) as min_km, MAX(quilometragem) as max_km,
-        MIN(modelo_ano) as min_year, MAX(modelo_ano) as max_year
-    FROM anuncios WHERE status = 'Ativo'";
-    $result_stats = $conn->query($sql_stats);
-    $stats = $result_stats ? $result_stats->fetch_assoc() : [];
+// b. Estatísticas (Preços e KM)
+$sql_stats = "SELECT 
+    MIN(preco) as min_price, MAX(preco) as max_price,
+    MIN(quilometragem) as min_km, MAX(quilometragem) as max_km,
+    MIN(modelo_ano) as min_year, MAX(modelo_ano) as max_year
+FROM anuncios WHERE status = 'Ativo'";
+$result_stats = $conn->query($sql_stats);
+$stats = $result_stats->fetch_assoc();
 
-    // Valores reais da DB
-    $real_max_price = (float)($stats['max_price'] ?? 100000);
-    $real_max_km = (int)($stats['max_km'] ?? 300000);
-    $min_price_val = (float)($stats['min_price'] ?? 0);
-    $min_km_val = (int)($stats['min_km'] ?? 0);
-}
+// Valores reais da DB
+$real_max_price = (float)($stats['max_price'] ?? 100000);
+$real_max_km = (int)($stats['max_km'] ?? 300000);
 
 // ARREDONDAMENTO PARA CIMA (Múltiplos de 5000)
 $display_max_price = ceil($real_max_price / 5000) * 5000;
@@ -103,117 +88,113 @@ $transmissions = ['Automática', 'Manual'];
 
 
 // --- 2. Lógica de Filtragem ---
-$listings = []; 
-$display_listings = []; 
-$filter_applied = isset($_GET['filter']);
-$fallback_message = false;
+$where_clauses = ["a.status = 'Ativo'"];
+$bind_types = '';
+$bind_params = [];
 
-if ($conn_exists) {
-    $where_clauses = ["a.status = 'Ativo'"];
-    $bind_types = '';
-    $bind_params = [];
+if (isset($_GET['filter'])) {
+    // Marca (Case Insensitive)
+    if (!empty($_GET['marca']) && $_GET['marca'] !== 'all') {
+        $where_clauses[] = "LOWER(TRIM(a.marca)) = LOWER(TRIM(?))"; 
+        $bind_types .= 's';
+        $bind_params[] = $_GET['marca'];
+    }
     
-    if ($filter_applied) {
-        // Lógica de filtragem com preparação de statement (código original)
-        // ... (o seu código de filtragem usando $where_clauses, $bind_types e $bind_params) ...
-        
-        // Marca (Case Insensitive)
-        if (!empty($_GET['marca']) && $_GET['marca'] !== 'all') {
-            $where_clauses[] = "LOWER(TRIM(a.marca)) = LOWER(TRIM(?))"; 
-            $bind_types .= 's';
-            $bind_params[] = $_GET['marca'];
-        }
-        
-        // Preço Máximo
-        if (!empty($_GET['preco_max'])) {
-            $selected_price = (float)$_GET['preco_max'];
-            if ($selected_price < ($display_max_price - 1)) {
-                $where_clauses[] = "a.preco <= ?";
-                $bind_types .= 'd';
-                $bind_params[] = $selected_price;
-            }
-        }
-        
-        // KM Máximo
-        if (!empty($_GET['km_max'])) {
-            $selected_km = (int)$_GET['km_max'];
-            if ($selected_km < ($display_max_km - 1)) {
-                $where_clauses[] = "a.quilometragem <= ?";
-                $bind_types .= 'i';
-                $bind_params[] = $selected_km;
-            }
-        }
-        
-        if (!empty($_GET['combustivel']) && $_GET['combustivel'] !== 'all') {
-            $where_clauses[] = "a.tipo_combustivel = ?";
-            $bind_types .= 's';
-            $bind_params[] = $_GET['combustivel'];
-        }
-        if (!empty($_GET['transmissao']) && $_GET['transmissao'] !== 'all') {
-            $where_clauses[] = "a.transmissao = ?";
-            $bind_types .= 's';
-            $bind_params[] = $_GET['transmissao'];
+    // Preço Máximo
+    if (!empty($_GET['preco_max'])) {
+        $selected_price = (float)$_GET['preco_max'];
+        if ($selected_price < ($real_max_price - 1)) {
+            $where_clauses[] = "a.preco <= ?";
+            $bind_types .= 'd';
+            $bind_params[] = $selected_price;
         }
     }
-
-    $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(' AND ', $where_clauses) : "";
-
-    // --- 3. Query Principal ---
-    if ($filter_applied) {
-        $stmt_inventory = $conn->prepare("
-            SELECT 
-                a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel,
-                (SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = a.id AND is_principal = 1 LIMIT 1) AS foto_principal
-            FROM 
-                anuncios a
-            {$where_sql}
-            ORDER BY 
-                a.destaque DESC, a.data_criacao DESC
-        ");
-        
-        if ($stmt_inventory) {
-            if (!empty($bind_types)) { 
-                $ref_bind_params = [];
-                foreach ($bind_params as $key => $value) {
-                    $ref_bind_params[$key] = &$bind_params[$key];
-                }
-                array_unshift($ref_bind_params, $bind_types);
-                call_user_func_array([$stmt_inventory, 'bind_param'], $ref_bind_params);
-            }
-            
-            $stmt_inventory->execute();
-            $result_inventory = $stmt_inventory->get_result();
-            $listings = $result_inventory ? $result_inventory->fetch_all(MYSQLI_ASSOC) : [];
-            $stmt_inventory->close();
+    
+    // KM Máximo
+    if (!empty($_GET['km_max'])) {
+        $selected_km = (int)$_GET['km_max'];
+        if ($selected_km < ($real_max_km - 1)) {
+            $where_clauses[] = "a.quilometragem <= ?";
+            $bind_types .= 'i';
+            $bind_params[] = $selected_km;
         }
-    } 
-
-    if (empty($listings)) {
-        // Fallback: carregar tudo se não houver resultados ou se for o load inicial
-        $sql_all_active_inventory = "
-            SELECT 
-                a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel,
-                (SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = a.id AND is_principal = 1 LIMIT 1) AS foto_principal
-            FROM 
-                anuncios a
-            WHERE a.status = 'Ativo'
-            ORDER BY 
-                a.destaque DESC, a.data_criacao DESC
-        ";
-        $result_all_active = $conn->query($sql_all_active_inventory);
-        $display_listings = $result_all_active ? $result_all_active->fetch_all(MYSQLI_ASSOC) : [];
-        
-        if ($filter_applied && !empty($display_listings)) {
-            $fallback_message = true;
-        }
-    } else {
-        $display_listings = $listings;
+    }
+    
+    if (!empty($_GET['combustivel']) && $_GET['combustivel'] !== 'all') {
+        $where_clauses[] = "a.tipo_combustivel = ?";
+        $bind_types .= 's';
+        $bind_params[] = $_GET['combustivel'];
+    }
+    if (!empty($_GET['transmissao']) && $_GET['transmissao'] !== 'all') {
+        $where_clauses[] = "a.transmissao = ?";
+        $bind_types .= 's';
+        $bind_params[] = $_GET['transmissao'];
     }
 }
 
+$where_sql = count($where_clauses) > 0 ? "WHERE " . implode(' AND ', $where_clauses) : "";
+
+// --- 3. Query Principal ---
+$listings = []; 
+$display_listings = []; 
+$filter_applied = isset($_GET['filter']);
+
+if ($filter_applied) {
+    $stmt_inventory = $conn->prepare("
+        SELECT 
+            a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel,
+            (SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = a.id AND is_principal = 1 LIMIT 1) AS foto_principal
+        FROM 
+            anuncios a
+        {$where_sql}
+        ORDER BY 
+            a.destaque DESC, a.data_criacao DESC
+    ");
+    
+    if ($stmt_inventory) {
+        if (!empty($bind_types)) { 
+            $ref_bind_params = [];
+            foreach ($bind_params as $key => $value) {
+                $ref_bind_params[$key] = &$bind_params[$key];
+            }
+            array_unshift($ref_bind_params, $bind_types);
+            call_user_func_array([$stmt_inventory, 'bind_param'], $ref_bind_params);
+        }
+        
+        $stmt_inventory->execute();
+        $result_inventory = $stmt_inventory->get_result();
+        $listings = $result_inventory ? $result_inventory->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt_inventory->close();
+    }
+} 
+
+$fallback_message = false;
+
+if (empty($listings)) {
+    // Fallback: carregar tudo se não houver resultados ou se for o load inicial
+    $sql_all_active_inventory = "
+        SELECT 
+            a.id, a.titulo, a.marca, a.modelo_ano, a.quilometragem, a.preco, a.potencia_hp, a.transmissao, a.destaque, a.tipo_combustivel,
+            (SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = a.id AND is_principal = 1 LIMIT 1) AS foto_principal
+        FROM 
+            anuncios a
+        WHERE a.status = 'Ativo'
+        ORDER BY 
+            a.destaque DESC, a.data_criacao DESC
+    ";
+    $result_all_active = $conn->query($sql_all_active_inventory);
+    $display_listings = $result_all_active ? $result_all_active->fetch_all(MYSQLI_ASSOC) : [];
+    
+    if ($filter_applied && !empty($display_listings)) {
+        $fallback_message = true;
+    }
+} else {
+    $display_listings = $listings;
+}
 
 // Configuração dos Sliders (Start Values)
 $current_filters = $_GET;
+// Se houver valor no GET, usa esse. Se não, usa o MÁXIMO ARREDONDADO para garantir que cobre tudo.
 $slider_start_price = isset($current_filters['preco_max']) ? (int)$current_filters['preco_max'] : $display_max_price;
 $slider_start_km = isset($current_filters['km_max']) ? (int)$current_filters['km_max'] : $display_max_km;
 
@@ -229,6 +210,22 @@ if (!isset($_SESSION['preloader_shown'])) {
     $show_preloader = true;
     $_SESSION['preloader_shown'] = true; 
 }
+
+// Testemunhos
+$testimonials = [
+    ['name' => 'Marcos Antônio de Souza Monteiro', 'time' => 'há um ano', 'text' => 'Experiência muito boa. Carro de boa procedência, em excelente estado de conservação de lataria e mecânica. Muito bem atendido e já sai com seguro. Recomendo!!!'],
+    ['name' => 'Renato Ribeiro', 'time' => 'há 2 anos', 'text' => 'Experiência premium! Assiduidade, pontualidade, conforto e segurança, são algumas das muitas qualidades da WFCARS.'],
+    ['name' => 'Silva', 'time' => 'há um ano', 'text' => 'Total profissionalismo em todo o processo de compra, excelência no serviço e atendimento, recomendo 100%.'],
+    ['name' => 'Vitor Amorim', 'time' => 'há 2 anos', 'text' => 'Atendimento de primeira, sempre dando atenção as exigências e dúvidas do cliente durante todo processo.'],
+    ['name' => 'Gilda Alves', 'time' => 'há 2 anos', 'text' => 'Muito satisfeita com a minha nova viatura! Atendimento excelente.'],
+    ['name' => 'Carlos Miguel Sousa', 'time' => 'há 2 anos', 'text' => 'Muito contente com o meu novo carro! Empresa de confianca !!!'],
+    ['name' => 'Armando Pedro Pereira', 'time' => 'há um ano', 'text' => 'Recomendo do melhor que já vi em todos os aspectos. Máxima confiança e transparência.'],
+    ['name' => 'Ivan Rocha', 'time' => 'há 7 meses', 'text' => '5 estrelas! Profissionalismo e qualidade garantida.'],
+    ['name' => 'Igor Rocha', 'time' => 'há 11 meses', 'text' => 'Serviço de alta qualidade e veículos de excelência. Recomendo.'],
+    ['name' => 'Beatriz Santos', 'time' => 'há um ano', 'text' => 'Excelente negócio! Transparência e rapidez no processo.'],
+    ['name' => 'Jose Galguinho', 'time' => 'há um ano', 'text' => 'Profissionais sérios e de confiança. A repetir.'],
+    ['name' => 'Sergio Manuel Ribeiro Martins', 'time' => 'há um ano', 'text' => 'Melhor stand! Atendimento e viaturas top.'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-PT" class="scroll-smooth">
@@ -657,16 +654,35 @@ if (!isset($_SESSION['preloader_shown'])) {
             line-height: 1; 
         }
         
-        /* Novo estilo para o container do widget Elfsight */
-        .widget-reviews-container {
-            margin-top: 3rem;
-            padding: 1rem;
-            background: var(--color-light-accent);
+        /* Testimonial Card */
+        .testimonial-card {
+            position: relative;
+            background: var(--color-dark-card); /* Cor de fundo */
+            border: 1px solid var(--color-highlight)/20; /* Borda subtil */
             border-radius: 12px;
-            /* Garante que o widget não é demasiado largo em desktop */
-            max-width: 900px; 
-            margin-left: auto;
-            margin-right: auto;
+            padding: 2rem;
+            text-align: center;
+            overflow: hidden;
+            min-height: 220px; /* Altura base para desktop */
+            display: flex; /* Flexbox para centralizar conteúdo verticalmente */
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .quote-icon {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8rem; /* Tamanho grande */
+            font-family: serif; /* Aspas clássicas */
+            color: var(--color-highlight);
+            opacity: 0.08; /* Muito subtil */
+            pointer-events: none;
+            z-index: 0;
+            line-height: 1;
         }
         
         /* WhatsApp Button */
@@ -715,28 +731,158 @@ if (!isset($_SESSION['preloader_shown'])) {
                 font-size: 2rem !important;
                 margin-bottom: 1rem !important;
             }
+            .antialiased p.text-subtle {
+                 font-size: 0.9rem;
+            }
             .py-20 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
             .py-28 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
             .lg\:py-28 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
             
-            /* Card/Filtros */
+            /* == HEADER == */
+            header .py-4 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+            header .h-16 { height: 4rem !important; } 
+            
+            /* == HERO (AJUSTE PRINCIPAL) */
+            .hero-background{ 
+                min-height: 75vh; 
+                background-position: center 70%; 
+            } 
+            
+            .hero-background .h-full.max-w-7xl { 
+                align-items: center !important; 
+                text-align: center !important; 
+                padding-top: 5rem !important; 
+                padding-bottom: 0 !important; 
+            }
+            
+            .hero-background .lg\:w-1\/2 {
+                width: 100% !important;
+                text-align: center !important;
+            }
+            
+            #search-bar-mobile {
+                margin-top: 0 !important;
+                padding-top: 1rem !important; 
+            }
+            #search-bar-mobile > div {
+                 padding: 1rem !important;
+            }
+            
+            /* == SLIDER CARD COMPACTATION == */
+            .swiper-slide .img-cover { 
+                height: 180px !important; 
+                object-fit: cover;
+                object-position: center 50%;
+            } 
+            
+            .swiper-slide {
+                width: 90% !important; 
+                padding-left: 0.5rem; 
+                padding-right: 0.5rem;
+            }
+            .swiper-slide .card-inner { padding: 0.75rem !important; } 
+            
+            /* Títulos e Texto: Redução de tamanho */
+            .swiper-slide .text-xl { 
+                font-size: 0.9rem !important; 
+                font-weight: 800 !important;
+                margin-top: 0.5rem !important;
+                line-height: 1.2;
+            }
+            .swiper-slide .text-2xl {
+                 font-size: 0.9rem !important; 
+            }
+            .swiper-slide .text-subtle {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Footer do Card: Compactar e Alinhar (mobile-footer style) */
+            .swiper-slide .card-footer-pc { 
+                margin-top: 0.75rem !important; 
+                padding-top: 0.5rem;
+            }
+            .swiper-slide .card-footer-pc a.details-button {
+                 padding: 0.5rem 1rem !important;
+                 font-size: 0.85rem !important;
+            }
+
+            .price-tag-highlight-button {
+                top: 8px;
+                right: 8px;
+                font-size: 0.7rem; 
+                padding: 0.3rem 0.6rem;
+            }
+            
+            .featured-tag-mobile {
+                top: 8px;
+                left: 8px;
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+
+            .year-highlight-desktop { display: none !important; }
+            .year-highlight-mobile {
+                display: block !important;
+                font-size: 0.9rem !important;
+                font-weight: 700;
+                color: var(--color-highlight);
+            }
+            
+            /* == FILTROS (#search-bar-mobile) == */
             .search-input { padding: 0.5rem !important; font-size: 0.8rem !important; }
             .range-label { font-size: 0.65rem !important; }
+            .md\:col-span-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             
-            /* Testimonials Fixes */
-            .widget-reviews-container {
-                padding: 0.5rem;
+            /* Testimonials Swiper Fixes */
+            .mySwiperTestimonials .swiper-wrapper {
+                align-items: stretch; 
+            }
+
+            .mySwiperTestimonials .swiper-slide {
+                width: 100% !important; 
+                padding-left: 0; 
+                padding-right: 0;
+            }
+            
+            .testimonial-card {
+                min-height: 250px !important; 
+                padding: 1.5rem !important; 
+            }
+            
+            .testimonial-card .quote-icon {
+                font-size: 5rem !important;
+                opacity: 0.05;
+                top: -10px;
+            }
+            
+            .testimonial-card p {
+                font-size: 0.95rem !important;
+            }
+            
+            #whatsapp-float-btn {
+                width: 50px; 
+                height: 50px;
+                font-size: 25px;
+                line-height: 50px;
+                bottom: 20px;
+                right: 20px;
+                background: linear-gradient(180deg, #b0b0b0, #9a9a9a) !important; 
+                color: #0b0b0b !important;
+                font-weight: 800;
             }
         }
         
         /* Audio Animations */
-        @keyframes wave { 0%, 100% { height: 8px; opacity: 0.5; } 50% { height: 20px; opacity: 1; } }
+        @keyframes wave { 
+            0%, 100% { height: 8px; opacity: 0.5; } 
+            50% { height: 20px; opacity: 1; } 
+        }
         .animate-wave { animation: wave 1.2s ease-in-out infinite; }
         .animation-delay-200 { animation-delay: 0.2s; }
         .animation-delay-400 { animation-delay: 0.4s; }
     </style>
 </head>
-<body class="antialiased bg-dark-primary text-white" data-filtered="<?php echo $filter_applied ? 'true' : 'false'; ?>">
+<body class="antialiased bg-dark-primary text-white" data-filtered="<?php echo $is_filtered ? 'true' : 'false'; ?>">
 
     <?php if($show_preloader): ?>
     <div id="preloader">
@@ -768,7 +914,7 @@ if (!isset($_SESSION['preloader_shown'])) {
         </nav>
     </header>
 
-    <div id="mobile-menu-overlay" class="mobile-menu-overlay hidden">
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay">
         
         <button id="close-menu" class="rr-close-btn">
             <div class="rr-close-icon"><i class="fas fa-times text-xs"></i></div>
@@ -928,7 +1074,7 @@ if (!isset($_SESSION['preloader_shown'])) {
             <div class="max-w-7xl mx-auto">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
                     <div>
-                        <h2 class="text-3xl lg:text-4xl font-extrabold">Coleção <span class="chrome-text">Exclusiva</span></h2>
+                        <h2 class="text-3xl lg:text-4xl font-extrabold">Coleção <span class="chrome-text">exclusiva</span></h2>
                         <p class="text-subtle">Viaturas que são investimentos e declarações de intenção.</p>
                     </div>
                     <div class="flex gap-4 mt-4 sm:mt-0 w-full sm:w-auto"> 
@@ -959,7 +1105,6 @@ if (!isset($_SESSION['preloader_shown'])) {
                             $image_path = !empty($car['foto_principal']) ? '../' . htmlspecialchars($car['foto_principal']) : 'heroimage.jpeg';
                             $price_formatted = format_price_card($car['preco']);
                             
-                            // CORREÇÃO DE SINTAXE AQUI:
                             $details_line_top = $car['modelo_ano'] . ' | ' . htmlspecialchars($car['transmissao']) . ' | ' . $car['potencia_hp'] . ' cv';
                             $details_line_bottom = '<i class="fa fa-tachometer-alt text-subtle/80"></i> ' . format_km_card($car['quilometragem']) . ' | <i class="fa fa-gas-pump text-subtle/80"></i> ' . htmlspecialchars($car['tipo_combustivel']);
 
@@ -1017,19 +1162,39 @@ if (!isset($_SESSION['preloader_shown'])) {
                 <?php endif; ?>
                 </div>
         </section>
-        
-        <section id="testimonials" class="py-20 lg:py-28 px-6 lg:px-12 bg-dark-card border-t border-highlight/10">
+        <section id="testimonials" class="py-20 lg:py-28 px-6 lg:px-12 bg-dark-primary">
             <div class="max-w-7xl mx-auto text-center">
                 <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">O que <span class="chrome-text">dizem os nossos clientes</span></h2>
-                <p class="text-subtle mb-10">Veja as nossas avaliações recentes do Google e Facebook, com sincronização automática (via Elfsight).</p>
+                <p class="text-subtle mb-10">A excelência no serviço é refletida nas experiências partilhadas.</p>
 
-                <div class="widget-reviews-container">
-                    <script src="https://elfsightcdn.com/platform.js" async></script>
-                    <div class="elfsight-app-cb83bd63-74ed-4937-8979-a4b64eff7a65" data-elfsight-app-lazy></div>
+                <div class="swiper mySwiperTestimonials pb-8">
+                    <div class="swiper-wrapper">
+
+                        <?php foreach ($testimonials as $t): ?>
+                        <div class="swiper-slide px-3">
+                            <div class="testimonial-card relative min-h-[220px]">
+                                <span class="quote-icon">“</span>
+                                <div class="relative z-10">
+                                    <div class="flex gap-1 mb-3 text-yellow-400 justify-center">
+                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                    </div>
+                                    <p class="text-gray-200 italic"><?php echo htmlspecialchars($t['text']); ?></p>
+                                </div>
+
+                                <footer class="mt-6">
+                                    <div class="h-0.5 w-20 bg-gradient-to-r from-gray-500 via-white to-gray-500 opacity-60 mb-3 mx-auto"></div>
+                                    <p class="text-highlight font-semibold"><?php echo htmlspecialchars($t['name']); ?></p>
+                                    <p class="text-subtle text-sm">Crítica de Google · <?php echo htmlspecialchars($t['time']); ?></p>
+                                </footer>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+
+                    </div>
+                    <div class="swiper-pagination mt-8"></div>
                 </div>
-                </div>
+            </div>
         </section>
-
         <section id="quem_somos" class="py-20 lg:py-28 px-6 lg:px-12 bg-dark-primary">
             <div class="max-w-7xl mx-auto">
                 <h2 class="text-3xl lg:text-4xl font-extrabold mb-6">Quem <span class="chrome-text">somos</span></h2>
@@ -1189,7 +1354,7 @@ Trabalhamos para que a sua experiência seja simples, segura e totalmente acompa
 
                     <h2 class="text-3xl lg:text-5xl font-extrabold mb-8 leading-tight">
                         Privacidade e <br/>
-                        <span class="chrome-text">Atenção Total</span>
+                        <span class="chrome-text">atenção total</span>
                     </h2>
 
                     <div class="h-1 w-24 bg-gradient-to-r from-highlight to-transparent mb-8"></div>
@@ -1333,6 +1498,13 @@ Trabalhamos para que a sua experiência seja simples, segura e totalmente acompa
         </div>
     </div>
 
+    <style>
+        @keyframes wave { 0%, 100% { height: 8px; opacity: 0.5; } 50% { height: 20px; opacity: 1; } }
+        .animate-wave { animation: wave 1.2s ease-in-out infinite; }
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
+    </style>
+    
     <script>
         // --- PRELOADER LOGIC ---
         window.addEventListener('load', () => {
@@ -1430,14 +1602,18 @@ Trabalhamos para que a sua experiência seja simples, segura e totalmente acompa
         }
 
         document.addEventListener('DOMContentLoaded', ()=>{
-            // Inicialização do Swiper de Veículos
             new Swiper('.mySwiper', { 
                 slidesPerView: 'auto', centeredSlides: true, spaceBetween:10, loop:false, 
                 navigation:{nextEl:'.swiper-button-next',prevEl:'.swiper-button-prev'}, 
-                breakpoints:{ 768:{slidesPerView:2, centeredSlides: false, spaceBetween: 20}, 1024:{slidesPerView:3, centeredSlides: false, spaceBetween: 30} } 
+                breakpoints:{ 768:{slidesPerView:2, centeredSlides: false}, 1024:{slidesPerView:3, centeredSlides: false} } 
             });
 
-            // Lógica para atualizar a visualização dos sliders de filtro
+            new Swiper('.mySwiperTestimonials', { 
+                slidesPerView:1, spaceBetween:20, loop:true, 
+                pagination:{el:'.swiper-pagination',clickable:true}, autoplay:{ delay: 4500, disableOnInteraction: false },
+                breakpoints:{ 768:{slidesPerView:2, spaceBetween: 30}, 1024:{slidesPerView:3, spaceBetween: 40} } 
+            });
+            
             function formatPriceForDisplay(value) { return '€ ' + parseInt(value).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
             function formatKmForDisplay(value) { return parseInt(value).toLocaleString('pt-PT') + ' km'; }
             
@@ -1498,8 +1674,7 @@ Trabalhamos para que a sua experiência seja simples, segura e totalmente acompa
                     waves.classList.remove('opacity-0');
                     btn.classList.add('bg-highlight', 'text-dark-primary');
                     btn.classList.remove('text-highlight');
-                    // Remove label if it exists
-                    if(label && label.parentNode) { label.parentNode.removeChild(label); }
+                    if(label) { label.style.transition = "opacity 0.5s"; label.style.opacity = "0"; setTimeout(() => label.remove(), 500); }
                 } else {
                     icon.classList.remove('hidden');
                     waves.classList.add('opacity-0');

@@ -1,6 +1,6 @@
 <?php
 /**
- * PÁGINA DE DETALHES DO CARRO - CARREGA DADOS DINAMICAMENTE
+ * PÁGINA DE DETALHES DO CARRO - VERSÃO FINAL (DESIGN ORIGINAL + LIMPEZA AVANÇADA + MUSIC PLAYER + PREÇO)
  */
 include 'db_connect.php'; 
 
@@ -12,11 +12,11 @@ if (!$car_id) {
     exit();
 }
 
-// 2. Buscar dados do carro (usando prepared statements para segurança)
+// 2. Buscar dados do carro (ADICIONADO: preco)
 $stmt = $conn->prepare("SELECT 
     id, titulo, descricao, modelo_ano, potencia_hp, quilometragem, transmissao,
-    cilindrada_cc, tipo_combustivel, raw_extras 
-    FROM anuncios WHERE id = ?"); // Removido "AND status='Ativo'" para permitir ver vendidos se tiver o link
+    cilindrada_cc, tipo_combustivel, raw_extras, preco 
+    FROM anuncios WHERE id = ?"); 
 $stmt->bind_param("i", $car_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -28,7 +28,7 @@ if (!$car) {
     exit();
 }
 
-// 3. Buscar todas as fotos associadas
+// 3. Buscar fotos
 $photos_stmt = $conn->prepare("SELECT caminho_foto FROM fotos_anuncio WHERE anuncio_id = ? ORDER BY is_principal DESC, id ASC");
 $photos_stmt->bind_param("i", $car_id);
 $photos_stmt->execute();
@@ -36,19 +36,46 @@ $photos_result = $photos_stmt->get_result();
 $photos = $photos_result->fetch_all(MYSQLI_ASSOC);
 $photos_stmt->close();
 
-
-// Variáveis dinâmicas para a página
+// Variáveis dinâmicas
 $title = htmlspecialchars($car['titulo']);
 $year = $car['modelo_ano'];
 $hp = $car['potencia_hp'];
 $km = number_format($car['quilometragem'], 0, ',', '.') . ' km';
 $transmissao = htmlspecialchars($car['transmissao']);
-$descricao_simples = htmlspecialchars($car['descricao']); // Descrição completa
+$descricao_simples = htmlspecialchars($car['descricao']); 
 $cilindrada_cc = $car['cilindrada_cc'] . ' cc';
 $combustivel = htmlspecialchars($car['tipo_combustivel']);
-$raw_extras_list = explode("\n", $car['raw_extras'] ?? ''); // Divide a lista de extras em linhas
-
 $logo_path = 'logo.png'; 
+
+// NOVO: Formatação do Preço
+$price = $car['preco'];
+$price_formatted = '€ ' . number_format($price, 0, ',', '.');
+
+
+// =========================================================
+// LÓGICA DE LIMPEZA DE EXTRAS (INTEGRADA)
+// =========================================================
+$raw_data = $car['raw_extras'] ?? '';
+
+// Regex que apanha \r\n, \n, \\r\\n, \\\\r\\\\n (o lixo da base de dados)
+$pattern = '/(\\\+r\\\+n|\\\+n|\\\+r|\r\n|\n|\r)/'; 
+$cleaned_extras_raw = preg_split($pattern, $raw_data, -1, PREG_SPLIT_NO_EMPTY);
+
+$final_extras_list = [];
+if (is_array($cleaned_extras_raw)) {
+    foreach ($cleaned_extras_raw as $item) {
+        // Remove aspas, barras e espaços
+        $clean_item = trim($item, " \t\n\r\0\x0B\"'\\");
+        // Remove emojis e marcadores
+        $clean_item = str_replace(['▪️', '•', '💰', '€', '📱', '- ', '_'], '', $clean_item);
+        
+        // Só adiciona se tiver texto real
+        if (strlen($clean_item) > 1) {
+            $final_extras_list[] = trim($clean_item);
+        }
+    }
+}
+// =========================================================
 ?>
 <!DOCTYPE html>
 <html lang="pt-PT" class="scroll-smooth">
@@ -59,7 +86,7 @@ $logo_path = 'logo.png';
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@200;300;400;600;700;800;900&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
@@ -100,168 +127,110 @@ $logo_path = 'logo.png';
         .btn-silver{background:linear-gradient(180deg,var(--color-highlight),#f5f5f5);color:#0b0b0b;font-weight:800}
         .silver-text { background: linear-gradient(135deg,#d0d0d0,#ffffff,#bfbfbf); -webkit-background-clip: text; color: transparent; }
         
-        /* ============================================== */
-        /* ESTILOS UNIFICADOS (HEADER & MENU) */
-        /* ============================================== */
+        /* NOVO: Estilo da Etiqueta de Preço Grande */
+        .price-tag-highlight-large {
+            position: absolute;
+            top: 20px; /* Mais afastado do topo */
+            right: 20px; /* Mais afastado da lateral */
+            background: linear-gradient(180deg, var(--color-highlight), #f5f5f5);
+            color: #0b0b0b; 
+            font-weight: 900; /* Mais negrito */
+            font-size: 1.8rem; /* Tornar maior */
+            padding: 0.75rem 1.5rem; /* Mais enchimento */
+            border-radius: 9999px; /* Pill shape */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            z-index: 10; 
+            text-shadow: none; 
+            letter-spacing: 0.05em;
+            transform: scale(1.05); /* Ligeiro destaque */
+            transition: transform 0.3s;
+        }
+        .price-tag-highlight-large:hover {
+             transform: scale(1.1);
+        }
 
-        /* HEADER PC */
+
+        /* HEADER PC (ESTILO ORBITRON - IGUAL AO INDEX) */
         .h-16 { height: 4rem !important; } 
         .header-logo-img { height: 4rem !important; }
         
         .header-nav-link {
-            font-weight: 300; 
-            letter-spacing: 0.05em; 
-            text-shadow: 0 0 10px rgba(200, 200, 200, 0.1);
-            transition: color 0.3s;
-            font-size: 1.1rem; 
-            font-family: 'Playfair Display', serif; 
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            text-shadow: 0 0 10px rgba(200,200,200,0.1);
+            transition: color 0.3s, transform 0.3s;
             color: var(--color-subtle) !important;
         }
+        
         .header-nav-link:hover {
             color: var(--color-highlight) !important;
+            transform: translateY(-2px);
         }
 
-        /* MENU MOBILE ESTILO ROLLS ROYCE */
+        header .btn-silver {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* MENU MOBILE */
         .mobile-menu-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 50;
-            background: #000000; /* Fundo Preto Puro */
-            display: flex; 
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start; /* Alinhado à esquerda */
-            padding-left: 2.5rem; 
-            
-            /* Transição */
-            opacity: 0;
-            visibility: hidden;
+            position: fixed; inset: 0; z-index: 50; background: #000000;
+            display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+            padding-left: 2.5rem; opacity: 0; visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-
-        .mobile-menu-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .mobile-menu-overlay nav {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            width: 100%;
-        }
-
+        .mobile-menu-overlay.active { opacity: 1; visibility: visible; }
+        .mobile-menu-overlay nav { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; }
         .mobile-menu-overlay nav a {
-            font-family: 'Manrope', sans-serif; 
-            font-size: 1.2rem;
-            font-weight: 400; 
-            letter-spacing: 0.2em; 
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.6); 
-            transition: all 0.4s ease;
-            opacity: 0;
-            transform: translateY(20px);
+            font-family: 'Manrope', sans-serif; font-size: 1.2rem; font-weight: 400; 
+            letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); 
+            transition: all 0.4s ease; opacity: 0; transform: translateY(20px);
         }
-
-        .mobile-menu-overlay.active nav a {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Delays para efeito cascata */
+        .mobile-menu-overlay.active nav a { opacity: 1; transform: translateY(0); }
         .mobile-menu-overlay.active nav a:nth-child(1) { transition-delay: 0.1s; }
         .mobile-menu-overlay.active nav a:nth-child(2) { transition-delay: 0.15s; }
         .mobile-menu-overlay.active nav a:nth-child(3) { transition-delay: 0.2s; }
         .mobile-menu-overlay.active nav a:nth-child(4) { transition-delay: 0.25s; }
+        .mobile-menu-overlay nav a:hover { color: #fff; padding-left: 10px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
 
-        .mobile-menu-overlay nav a:hover {
-            color: #fff;
-            padding-left: 10px; 
-            text-shadow: 0 0 15px rgba(255,255,255,0.4);
-        }
-
-        /* Botão Fechar (Topo Direito) */
+        /* Botão Fechar */
         .rr-close-btn {
-            position: absolute;
-            top: 25px;
-            right: 25px; 
-            left: auto;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-            font-family: 'Manrope', sans-serif;
-            font-size: 0.75rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            background: none;
-            border: none;
-            cursor: pointer;
-            z-index: 60;
-            flex-direction: row-reverse;
+            position: absolute; top: 25px; right: 25px; left: auto; display: flex; align-items: center;
+            gap: 10px; color: white; font-family: 'Manrope', sans-serif; font-size: 0.75rem;
+            letter-spacing: 0.15em; text-transform: uppercase; background: none; border: none;
+            cursor: pointer; z-index: 60; flex-direction: row-reverse;
         }
-
         .rr-close-icon {
-            width: 32px;
-            height: 32px;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.3s;
+            width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.3); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; transition: border-color 0.3s;
         }
+        .rr-close-btn:hover .rr-close-icon { border-color: white; }
         
-        .rr-close-btn:hover .rr-close-icon {
-            border-color: white;
-        }
-        
-        /* ============================================== */
-        /* ESTILOS DE DETALHES DO CARRO */
-        /* ============================================== */
-
+        /* CARD & SWIPER */
         .card { background:#111; border:1px solid #ffffff22; box-shadow:0 0 25px #ffffff10; border-radius:1rem; }
         
-        /* Swiper Navigation */
         .gallerySlider .swiper-button-next,
         .gallerySlider .swiper-button-prev {
-            color: var(--color-highlight) !important;
-            background-color: var(--color-dark-card) !important;
-            width: 48px; 
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            transition: all 0.3s;
-            opacity: 0.8;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-            position: absolute !important;
-            top: 50% !important;
+            color: var(--color-highlight) !important; background-color: var(--color-dark-card) !important;
+            width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s; opacity: 0.8; box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            position: absolute !important; top: 50% !important;
         }
-
-        /* Thumbnails */
         .galleryThumbs .swiper-slide {
-            transition: all 0.3s;
-            opacity: 0.5;
-            border-radius: 8px;
-            border: 2px solid transparent;
-            overflow: hidden;
-            height: 90px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            cursor: pointer;
+            transition: all 0.3s; opacity: 0.5; border-radius: 8px; border: 2px solid transparent;
+            overflow: hidden; height: 90px; box-shadow: 0 0 10px rgba(0,0,0,0.3); cursor: pointer;
         }
-        .galleryThumbs .swiper-slide-thumb-active {
-            opacity: 1;
-            border-color: #C8C8CA;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-        }
+        .galleryThumbs .swiper-slide-thumb-active { opacity: 1; border-color: #C8C8CA; box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
         
-        /* FOOTER subtle */
         footer a{color:var(--color-subtle)}
         footer a:hover{color:var(--color-highlight)}
 
-        /* ================================================= */
-        /* == MOBILE OPTIMIZATION (Max 767px) == */
-        /* ================================================= */
+        /* MOBILE */
         @media(max-width: 767px) {
             .py-12 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
             .py-24 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
@@ -269,67 +238,31 @@ $logo_path = 'logo.png';
             .text-5xl { font-size: 2.25rem !important; }
             .text-3xl { font-size: 1.5rem !important; }
             .text-lg { font-size: 0.9rem !important; }
-
-            /* Header Mobile */
             .h-16 { height: 3.5rem !important; }
             .header-logo-img { height: 3.5rem !important; }
-            
-            /* Galeria */
             #galeria .text-center { margin-bottom: 1rem; margin-top: 0; }
             #galeria .swiper { margin-bottom: 0.5rem; }
             .gallerySlider .swiper-slide img { min-height: 300px !important; }
-            
-            .gallerySlider .swiper-button-next,
-            .gallerySlider .swiper-button-prev {
-                width: 36px;
-                height: 36px;
-                font-size: 0.8rem;
-                border: 1px solid rgba(255, 255, 255, 0.4);
-            }
-
-            .galleryThumbs .swiper-slide {
-                height: 70px;
-            }
-            
-            /* Ficha Técnica */
-            #detalhes .grid-cols-1 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.5rem;
-            }
+            .gallerySlider .swiper-button-next, .gallerySlider .swiper-button-prev { width: 36px; height: 36px; font-size: 0.8rem; }
+            .galleryThumbs .swiper-slide { height: 70px; }
+            #detalhes .grid-cols-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
             #detalhes .mb-12 { margin-bottom: 1rem; }
-            
-            .card.p-8 {
-                padding: 0.75rem !important;
-                border-radius: 0.5rem;
-            }
-            .card p.text-sm {
-                font-size: 0.65rem;
-            }
-            .card h3.text-2xl {
-                font-size: 1rem;
-                margin-top: 0.25rem;
-            }
-            
-            /* Extras */
+            .card.p-8 { padding: 0.75rem !important; border-radius: 0.5rem; }
+            .card p.text-sm { font-size: 0.65rem; }
+            .card h3.text-2xl { font-size: 1rem; margin-top: 0.25rem; }
             #extras .mb-12 { margin-bottom: 1rem; }
-            #extras .card h3.text-xl {
-                font-size: 1rem;
-                margin-bottom: 0.5rem;
-            }
-            #extras .grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                font-size: 0.75rem;
-                gap-y: 0.5rem;
-            }
-            .fa-check-circle { 
-                 font-size: 0.6rem !important;
-            }
-
-            /* Contacto */
+            #extras .card h3.text-xl { font-size: 1rem; margin-bottom: 0.5rem; }
+            #extras .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); font-size: 0.75rem; gap-y: 0.5rem; }
+            .fa-check-circle { font-size: 0.6rem !important; }
             #contacto .mb-10 { margin-bottom: 1rem; }
-            #contacto a.px-10 {
-                padding: 0.75rem 1rem !important;
-                font-size: 0.9rem;
+            #contacto a.px-10 { padding: 0.75rem 1rem !important; font-size: 0.9rem; }
+
+            /* Ajuste para o preço grande no móvel */
+            .price-tag-highlight-large {
+                top: 12px; 
+                right: 12px; 
+                font-size: 1.2rem; 
+                padding: 0.5rem 1rem;
             }
         }
     </style>
@@ -345,7 +278,7 @@ $logo_path = 'logo.png';
       <div class="hidden lg:flex items-center gap-8">
         <a href="index.php#about-faq" class="header-nav-link text-subtle hover:text-highlight transition">SOBRE NÓS</a>
         <a href="inventory.php" class="header-nav-link text-subtle hover:text-highlight transition">CATÁLOGO</a> 
-        <a href="index.php#contact" class="ml-4 btn-silver px-5 py-2 rounded-md shadow">FALE CONNOSCO</a>
+        <a href="index.php#contact" class="ml-4 btn-silver px-5 py-2 rounded-md shadow transition-transform hover:scale-105">FALE CONNOSCO</a>
       </div>
 
       <button id="open-menu" class="lg:hidden text-2xl text-subtle"><i class="fa fa-bars"></i></button>
@@ -371,13 +304,16 @@ $logo_path = 'logo.png';
 <main class="pt-28 lg:pt-20">
 
 <section id="galeria" class="px-10 bg-dark-primary max-w-7xl mx-auto">
-
     <div class="text-center mb-10 mt-6">
         <h1 class="text-5xl font-extrabold tracking-tight silver-text"><?php echo $title; ?></h1>
         <p class="text-gray-400 text-lg mt-2 max-w-xl mx-auto whitespace-pre-line"><?php echo nl2br($descricao_simples); ?></p>
     </div>
 
     <div class="swiper gallerySlider mb-4 relative rounded-xl overflow-hidden shadow-[0_0_45px_#ffffff30] border border-[#ffffff22]">
+        
+        <span class="price-tag-highlight-large">
+            <?php echo $price_formatted; ?>
+        </span>
         <div class="swiper-wrapper">
             <?php if (!empty($photos)): ?>
                 <?php foreach ($photos as $photo): 
@@ -389,20 +325,17 @@ $logo_path = 'logo.png';
                  <div class="swiper-slide"><img src="heroimage.jpeg" class="w-full h-full object-cover min-h-[450px]" alt="Imagem não disponível" /></div>
             <?php endif; ?>
         </div>
-        
         <div class="swiper-button-next swiper-button-white right-4"></div>
         <div class="swiper-button-prev swiper-button-white left-4"></div>
     </div>
 
     <div class="swiper galleryThumbs w-full h-24 mt-4">
         <div class="swiper-wrapper">
-            <?php if (!empty($photos)): ?>
-                <?php foreach ($photos as $photo): 
+            <?php if (!empty($photos)): foreach ($photos as $photo): 
                     $image_path = '../' . htmlspecialchars($photo['caminho_foto']);
                 ?>
                 <div class="swiper-slide"><img src="<?php echo $image_path; ?>" class="w-full h-full object-cover" alt="Thumbnail" /></div>
-                <?php endforeach; ?>
-            <?php else: ?>
+                <?php endforeach; else: ?>
                 <div class="swiper-slide"><img src="heroimage.jpeg" class="w-full h-full object-cover" alt="Thumbnail Default" /></div>
             <?php endif; ?>
         </div>
@@ -413,6 +346,7 @@ $logo_path = 'logo.png';
     <h2 class="text-3xl font-bold mb-12 silver-text">Ficha Técnica Detalhada</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div class="card p-8"><p class="text-sm text-gray-400">Preço (Referência)</p><h3 class="text-2xl font-semibold mt-2"><?php echo $price_formatted; ?></h3></div>
         <div class="card p-8"><p class="text-sm text-gray-400">Potência (CV)</p><h3 class="text-2xl font-semibold mt-2"><?php echo $hp; ?> cv</h3></div>
         <div class="card p-8"><p class="text-sm text-gray-400">Transmissão</p><h3 class="text-2xl font-semibold mt-2"><?php echo $transmissao; ?></h3></div>
         <div class="card p-8"><p class="text-sm text-gray-400">Combustível</p><h3 class="text-2xl font-semibold mt-2"><?php echo $combustivel; ?></h3></div>
@@ -427,18 +361,13 @@ $logo_path = 'logo.png';
 
     <div class="card p-8 mx-auto max-w-4xl">
         <h3 class="text-xl font-semibold mb-3 silver-text">Lista Completa de Extras</h3>
-        <?php 
-        $cleaned_extras = array_map('trim', explode("\n", $car['raw_extras'] ?? ''));
-        $cleaned_extras = array_filter($cleaned_extras); 
-        ?>
         
-        <?php if (!empty($cleaned_extras)): ?>
+        <?php if (!empty($final_extras_list)): ?>
             <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6 text-gray-300 text-sm">
-                <?php foreach ($cleaned_extras as $extra): ?>
-                    <?php $display_extra = trim(str_replace(['▪️', '•', '💰', '€', '📱'], '', $extra)); ?>
+                <?php foreach ($final_extras_list as $extra): ?>
                     <p class="flex items-start">
                         <i class="fas fa-check-circle text-gray-500 text-xs mt-1 me-2 flex-shrink-0"></i>
-                        <span><?php echo $display_extra; ?></span>
+                        <span><?php echo htmlspecialchars($extra); ?></span>
                     </p>
                 <?php endforeach; ?>
             </div>
@@ -485,7 +414,6 @@ $logo_path = 'logo.png';
             <a href="https://www.facebook.com/people/WFcars/61551061824401/?ref=_xav_ig_profile_page_web" target="_blank" title="Facebook" class="hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
         </div>
       </div>
-      
     </div>
 
    <div class="max-w-7xl mx-auto text-center mt-12 text-subtle text-sm px-6 lg:px-12">
@@ -495,6 +423,41 @@ $logo_path = 'logo.png';
         <p class="text-subtle text-sm">&copy; 2025 WF CARS. Todos os direitos reservados.</p>
     </div>
 </footer>
+
+<audio id="bg-music" loop>
+    <source src="jazz_ambience.mp3" type="audio/mpeg">
+    O seu navegador não suporta áudio.
+</audio>
+
+<div id="audio-control-container" class="fixed bottom-6 left-6 z-50 flex items-center gap-3 transition-all duration-1000 transform translate-y-20 opacity-0">
+    
+    <button id="music-toggle-btn" class="group relative w-[50px] h-[50px] rounded-full bg-dark-card/80 border border-highlight/30 text-highlight shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md flex items-center justify-center hover:bg-highlight hover:text-dark-primary transition-all duration-500 overflow-hidden">
+        
+        <div id="music-waves" class="absolute inset-0 flex items-center justify-center gap-1 opacity-0 transition-opacity duration-300">
+            <div class="w-1 h-3 bg-current rounded-full animate-wave"></div>
+            <div class="w-1 h-5 bg-current rounded-full animate-wave animation-delay-200"></div>
+            <div class="w-1 h-3 bg-current rounded-full animate-wave animation-delay-400"></div>
+        </div>
+
+        <i id="music-icon" class="fas fa-play ml-1 text-lg transition-transform duration-300 group-hover:scale-110"></i>
+    </button>
+</div>
+
+<style>
+    /* Audio Animations */
+    @keyframes wave { 
+        0%, 100% { height: 8px; opacity: 0.5; } 
+        50% { height: 20px; opacity: 1; } 
+    }
+    .animate-wave { animation: wave 1.2s ease-in-out infinite; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+
+    /* MOBILE ADJUSTMENT FOR NEW PRICE SECTION */
+    @media(max-width: 767px) {
+        #galeria .text-center { margin-top: 0; }
+    }
+</style>
 
 <script>
     // Função auxiliar para fechar o menu mobile
@@ -553,6 +516,92 @@ $logo_path = 'logo.png';
                 crossFade: true
             },
         });
+
+        // --- PERSISTENT AUDIO LOGIC (SHARED) ---
+        const audio = document.getElementById('bg-music');
+        const btn = document.getElementById('music-toggle-btn');
+        const icon = document.getElementById('music-icon');
+        const waves = document.getElementById('music-waves');
+        const container = document.getElementById('audio-control-container');
+
+        // 1. Ler o estado guardado no navegador
+        const isMusicActive = localStorage.getItem('wfcars_music_active') === 'true';
+        const storedTime = parseFloat(localStorage.getItem('wfcars_music_time')) || 0;
+
+        audio.volume = 0; 
+        let isPlaying = false;
+        let fadeInterval;
+
+        // Mostrar botão suavemente
+        setTimeout(() => { if(container) container.classList.remove('translate-y-20', 'opacity-0'); }, 1000);
+
+        // Função Fade
+        function fadeAudio(targetVolume, duration) {
+            const step = 0.05;
+            if (fadeInterval) clearInterval(fadeInterval);
+            fadeInterval = setInterval(() => {
+                if (audio.volume < targetVolume && targetVolume > 0) {
+                    if (audio.volume + step >= targetVolume) { audio.volume = targetVolume; clearInterval(fadeInterval); } 
+                    else { audio.volume += step; }
+                } else if (audio.volume > targetVolume) {
+                    if (audio.volume - step <= targetVolume) { audio.volume = targetVolume; clearInterval(fadeInterval); if (targetVolume === 0) audio.pause(); } 
+                    else { audio.volume -= step; }
+                }
+            }, 50);
+        }
+
+        // Atualizar UI
+        function updateUI(playing) {
+            if (playing) {
+                icon.classList.add('hidden');
+                waves.classList.remove('opacity-0');
+                btn.classList.add('bg-highlight', 'text-dark-primary');
+                btn.classList.remove('text-highlight');
+            } else {
+                icon.classList.remove('hidden');
+                waves.classList.add('opacity-0');
+                btn.classList.remove('bg-highlight', 'text-dark-primary');
+                btn.classList.add('text-highlight');
+            }
+        }
+
+        // 2. Se a música estava ativa, retoma de onde parou
+        if (isMusicActive) {
+            audio.currentTime = storedTime;
+            isPlaying = true;
+            updateUI(true);
+            audio.play().then(() => { fadeAudio(0.4, 1000); }).catch(e => {
+                console.log("Autoplay blocked (browser policy):", e);
+                isPlaying = false; updateUI(false);
+                localStorage.setItem('wfcars_music_active', 'false');
+            });
+        }
+
+        // 3. Salvar estado antes de sair da página
+        window.addEventListener('beforeunload', () => {
+            if(isPlaying) {
+                localStorage.setItem('wfcars_music_active', 'true');
+                localStorage.setItem('wfcars_music_time', audio.currentTime);
+            } else {
+                localStorage.setItem('wfcars_music_active', 'false');
+            }
+        });
+
+        // Salvar periodicamente (segurança extra)
+        setInterval(() => { if(isPlaying) localStorage.setItem('wfcars_music_time', audio.currentTime); }, 3000);
+
+        // 4. Click Handler
+        if(btn) {
+            btn.addEventListener('click', () => {
+                if (isPlaying) {
+                    isPlaying = false; updateUI(false); fadeAudio(0, 500);
+                    localStorage.setItem('wfcars_music_active', 'false');
+                } else {
+                    isPlaying = true; updateUI(true); audio.play(); fadeAudio(0.4, 1000);
+                    localStorage.setItem('wfcars_music_active', 'true');
+                }
+            });
+        }
     });
 </script>
 
